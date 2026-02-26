@@ -93,15 +93,15 @@ $results = @()
 foreach ($p in $Paths) {
   $cdnUrl = "https://cdn.jsdelivr.net/gh/$ownerRepo@$Tag/$p"
   if ($p -like "*.css") {
-    $tag = "<link rel=`"stylesheet`" href=`"$cdnUrl`">"
+    $htmlTag = "<link rel=`"stylesheet`" href=`"$cdnUrl`">"
   } else {
-    $tag = "<script src=`"$cdnUrl`"></script>"
+    $htmlTag = "<script src=`"$cdnUrl`"></script>"
   }
-  $results += [pscustomobject]@{Path=$p;Url=$cdnUrl;Tag=$tag}
+  $results += [pscustomobject]@{Path=$p;Url=$cdnUrl;Tag=$htmlTag}
 }
 
 # 5) Purge (optional but recommended for moving tags)
-$purgeUrl = "https://purge.jsdelivr.net/gh/$ownerRepo@$Tag/$Path"
+# individual purge URLs are printed and requested inside the loop below
 
 Write-Host ""
 Write-Host "✅ Webflow tags (stable):"
