@@ -16,6 +16,19 @@ The preferred entrypoint on Windows is ``tools/deploy.ps1``.  Example usage:
 ```powershell
 # from repo root
 .\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Purge -Copy
+
+// examples:
+// Deploy a single file (default path if none specified):
+.\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Purge -Copy
+
+// Deploy every `.js`/`.css` file found under the project directory
+// (client-projects/<project> or projects/<project>); no -Paths argument needed:
+.\tools\deploy.ps1 -Project clpr-isab.nu -Message "pulling in Slater migration" -Purge -Copy
+
+// or explicitly list individual files when you only want a subset:
+.\tools\deploy.ps1 -Project clpr-isab.nu -Message "pulling in Slater migration" \
+    -Paths "client-projects/clpr-isab.nu/index.js","client-projects/clpr-isab.nu/styling.css" \
+    -Purge -Copy
 ```
 
 The script will:
@@ -29,7 +42,13 @@ The script will:
 Arguments that are not provided will be defaulted as follows:
 
 * ``-Tag`` defaults to ``<project>-prod``
-* ``-Path`` defaults to ``projects/<project>/site.js``
+* ``-Paths`` defaults to ``projects/<project>/site.js`` (a single-element array).
+
+You may supply multiple paths as a comma-separated list or by repeating the
+``-Paths`` parameter; PowerShell also allows the shorthand ``-Path`` via
+partial parameter name matching if you prefer.  The script will generate a
+`<script>` tag for each non-`.css` file and a `<link>` tag for stylesheets,
+purge each URL individually, and copy all tags to the clipboard.
 
 ### Bash (macOS/Linux/Git Bash)
 
