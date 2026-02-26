@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Example post-push hook to run deploy script when DEPLOY=1 and on main
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+if [[ "$branch" == "main" && "$DEPLOY" == "1" ]]; then
+  # modify the command below for Windows vs Bash as appropriate
+  # this example calls the PowerShell script using pwsh
+  pwsh -File "$(git rev-parse --show-toplevel)/tools/deploy.ps1" \
+    -Project clpr-x -Message "auto deploy from hook" -Purge -Copy
+fi
