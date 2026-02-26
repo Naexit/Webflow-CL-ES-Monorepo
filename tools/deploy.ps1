@@ -79,14 +79,14 @@ if ($remote -match "github\.com[:/](?<owner>[^/]+?)/(?<repo>[^/]+?)(\.git)?$") {
   throw "Could not parse OWNER/REPO from remote: $remote"
 }
 
-# 2) Stage + commit + push
-git add .
-git commit -m $Message
-git push
+# 2) Stage + commit + push (suppress output for clarity)
+git add . 2>&1 | Out-Null
+git commit -m $Message 2>&1 | Out-Null
+git push 2>&1 | Out-Null
 
-# 3) Move the prod tag to current commit and push it (stable URL stays the same)
-git tag -f $Tag
-git push -f origin $Tag
+# 3) Move the prod tag to current commit and push it (suppress output)
+git tag -f $Tag 2>&1 | Out-Null
+git push -f origin $Tag 2>&1 | Out-Null
 
 ## 4) Build jsDelivr URLs + tags (deterministic format)
 $results = @()
@@ -101,30 +101,33 @@ foreach ($p in $Paths) {
 }
 
 # 5) Purge (optional but recommended for moving tags)
-# individual purge URLs are printed and requested inside the loop below
-
-Write-Host ""
-Write-Host "✅ Webflow tags (stable):"
-foreach ($r in $results) {
-  Write-Host $r.Tag
-}
-Write-Host ""
-Write-Host "🧹 Purge URLs:"
-foreach ($r in $results) {
-  Write-Host "https://purge.jsdelivr.net/gh/$ownerRepo@$Tag/$($r.Path)"
-}
-Write-Host ""
-
-if ($Copy) {
-  # copy all tags separated by newline
-  ($results | ForEach-Object { $_.Tag }) -join "`n" | Set-Clipboard
-  Write-Host "📋 Copied tags to clipboard!"
-}
-
 if ($Purge) {
   foreach ($r in $results) {
       $purgeUrl = "https://purge.jsdelivr.net/gh/$ownerRepo@$Tag/$($r.Path)"
-      Invoke-WebRequest -UseBasicParsing $purgeUrl | Out-Null
+      Invoke-WebRequest -UseBasicParsing $purgeUrl -ErrorAction SilentlyContinue | Out-Null
   }
-  Write-Host "🔥 Purge triggered for all paths!"
 }
+
+# Copy to clipboard
+if ($Copy) {
+  ($results | ForEach-Object { $_.Tag }) -join "`n" | Set-Clipboard
+}
+
+# Print summary (quiet output, then tags at the end for visibility)
+Write-Host ""
+Write-Host "[DEPLOY COMPLETE]" -ForegroundColor Green
+if ($Purge) {
+  Write-Host "[PURGE] Cache invalidated" -ForegroundColor Green
+}
+if ($Copy) {
+  Write-Host "[COPY] Tags copied to clipboard" -ForegroundColor Green
+}
+Write-Host ""
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host "Webflow Tags (Ready to Paste):" -ForegroundColor Cyan
+Write-Host "================================================" -ForegroundColor Cyan
+foreach ($r in $results) {
+  Write-Host $r.Tag -ForegroundColor Yellow
+}
+Write-Host "================================================" -ForegroundColor Cyan
+Write-Host ""
