@@ -80,13 +80,13 @@ if ($remote -match "github\.com[:/](?<owner>[^/]+?)/(?<repo>[^/]+?)(\.git)?$") {
 }
 
 # 2) Stage + commit + push (suppress output for clarity)
-git add . 2>&1 | Out-Null
-git commit -m $Message 2>&1 | Out-Null
-git push 2>&1 | Out-Null
+$null = git add .
+$null = git commit -m $Message
+$null = git push
 
 # 3) Move the prod tag to current commit and push it (suppress output)
-git tag -f $Tag 2>&1 | Out-Null
-git push -f origin $Tag 2>&1 | Out-Null
+$null = git tag -f $Tag
+$null = git push -f origin $Tag
 
 ## 4) Build jsDelivr URLs + tags (deterministic format)
 $results = @()
