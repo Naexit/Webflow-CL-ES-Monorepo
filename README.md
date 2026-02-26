@@ -1,6 +1,6 @@
 # Webflow-CL-ES-Monorepo
 
-This repository contains the Webflow client projects and shared resources.
+We ship Webflow front‑end updates by keeping our JS/CSS in a single repo and deploying with one repeatable flow: commit + push, move a stable `<project>-prod` tag, output a deterministic jsDelivr embed URL, and (when needed) purge CDN caches. The result is a stable script link per project, faster iteration, and easy rollbacks with a clear audit trail. jsDelivr is a public CDN for open‑source files, so this setup works best with public repos—don’t store secrets or sensitive client data in this repository.
 
 ## Deployment helper scripts
 
