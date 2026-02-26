@@ -46,6 +46,26 @@ if ($Paths.Count -eq 0) {
 # ensure the list is flattened and trimmed
 $Paths = $Paths | ForEach-Object { $_ }
 
+# convert any absolute paths to repository-relative paths; jsDelivr expects
+# a path inside the repo, not a local filesystem path.
+# "git rev-parse" may include a trailing newline; trim it with Trim() which
+# handles both `r and `n correctly.
+$repoRoot = (git rev-parse --show-toplevel).Trim()
+$Paths = $Paths | ForEach-Object {
+  $p = $_
+  if ([System.IO.Path]::IsPathRooted($p)) {
+    # make relative to repo root
+    $relative = Resolve-Path -Path $p -Relative -ErrorAction SilentlyContinue
+    if (!$relative) {
+      # fallback: strip repoRoot prefix manually
+      $relative = $p -replace [regex]::Escape($repoRoot + '\\?'), ''
+    }
+    $p = $relative
+  }
+  # normalize to forward slashes for CDN URL
+  $p -replace '\\', '/'
+}
+
 # 1) Get origin remote (OWNER/REPO)
 $remote = (git remote get-url origin).Trim()
 
