@@ -817,3 +817,5 @@ function initModalBasic() {
 document.addEventListener('DOMContentLoaded', () => {
   initModalBasic();
 });
+
+// Flensburg Animation
