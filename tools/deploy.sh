@@ -32,14 +32,14 @@ SCRIPT_TAG="<script src=\"${CDN_URL}\"></script>"
 PURGE_URL="https://purge.jsdelivr.net/gh/${OWNER_REPO}@${TAG}/${PATH_IN_REPO}"
 
 echo ""
-echo "✅ Webflow script tag (stable):"
+echo "Webflow script tag (stable):"
 echo "$SCRIPT_TAG"
 echo ""
-echo "🧹 Purge URL:"
+echo "Purge URL:"
 echo "$PURGE_URL"
 echo ""
 
 if [[ "$DO_PURGE" == "true" ]]; then
   curl -s "$PURGE_URL" > /dev/null
-  echo "🔥 Purge triggered!"
+  echo "Purge triggered!"
 fi
