@@ -84,14 +84,16 @@ $null = git add .
 $null = git commit -m $Message
 $null = git push
 
-# 3) Move the prod tag to current commit and push it (suppress output)
-$null = git tag -f $Tag
-$null = git push -f origin $Tag
+# 3) Get current commit SHA for CDN URL generation
+# Using a commit SHA ensures jsDelivr doesn't apply immutable cache headers
+# (which would prevent updates even after purge). Each deploy gets a unique URL.
+$commitSha = (git rev-parse HEAD).Trim()
 
 ## 4) Build jsDelivr URLs + tags (deterministic format)
+# Use commit SHA instead of tag to avoid jsDelivr's immutable cache headers
 $results = @()
 foreach ($p in $Paths) {
-  $cdnUrl = "https://cdn.jsdelivr.net/gh/$ownerRepo@$Tag/$p"
+  $cdnUrl = "https://cdn.jsdelivr.net/gh/$ownerRepo@$commitSha/$p"
   if ($p -like "*.css") {
     $htmlTag = "<link rel=`"stylesheet`" href=`"$cdnUrl`">"
   } else {
@@ -100,12 +102,12 @@ foreach ($p in $Paths) {
   $results += [pscustomobject]@{Path=$p;Url=$cdnUrl;Tag=$htmlTag}
 }
 
-# 5) Purge (optional but recommended for moving tags)
+# 5) No purge needed when using commit SHAs
+# Each deploy gets a unique URL (different commit SHA), so there's no cache
+# staleness problem. jsDelivr treats commit-based URLs as properly immutable
+# and won't apply aggressive caching that blocks updates.
 if ($Purge) {
-  foreach ($r in $results) {
-      $purgeUrl = "https://purge.jsdelivr.net/gh/$ownerRepo@$Tag/$($r.Path)"
-      Invoke-WebRequest -UseBasicParsing $purgeUrl -ErrorAction SilentlyContinue | Out-Null
-  }
+  Write-Host "[PURGE] Not needed with commit-based URLs (each deploy is a new URL)" -ForegroundColor Gray
 }
 
 # Copy to clipboard
@@ -116,9 +118,7 @@ if ($Copy) {
 # Print summary (quiet output, then tags at the end for visibility)
 Write-Host ""
 Write-Host "[DEPLOY COMPLETE]" -ForegroundColor Green
-if ($Purge) {
-  Write-Host "[PURGE] Cache invalidated" -ForegroundColor Green
-}
+Write-Host "[COMMIT] $commitSha" -ForegroundColor Green
 if ($Copy) {
   Write-Host "[COPY] Tags copied to clipboard" -ForegroundColor Green
 }
