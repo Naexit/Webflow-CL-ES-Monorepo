@@ -1,6 +1,6 @@
 # Webflow-CL-ES-Monorepo
 
-We ship Webflow front‑end updates by keeping our JS/CSS in a single repo and deploying with one repeatable flow: commit + push, move a stable `<project>-prod` tag, output a deterministic jsDelivr embed URL, and (when needed) purge CDN caches. The result is a stable script link per project, faster iteration, and easy rollbacks with a clear audit trail. jsDelivr is a public CDN for open‑source files, so this setup works best with public repos—don’t store secrets or sensitive client data in your repository.
+We ship Webflow front‑end updates by keeping our JS/CSS in a single repo and deploying with one repeatable flow: commit + push, then paste the auto-generated jsDelivr URL into Webflow. The default is **always-fresh content** (commit-based URLs that change on every deploy), with faster iteration and easy rollbacks with a clear audit trail. If you need a stable embedding URL, you can use the tag-based approach at the cost of accepting CDN cache delays. jsDelivr is a public CDN for open‑source files, so this setup works best with public repos—don't store secrets or sensitive client data in your repository.
 
 ## Deployment helper scripts
 
@@ -15,40 +15,41 @@ The preferred entrypoint on Windows is ``tools/deploy.ps1``.  Example usage:
 
 ```powershell
 # from repo root
-.\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Purge -Copy
+.\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Copy
 
 // examples:
 // Deploy a single file (default path if none specified):
-.\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Purge -Copy
+.\tools\deploy.ps1 -Project clpr-x -Message "clpr-x: update navbar logic" -Copy
 
 // Deploy every `.js`/`.css` file found under the project directory
 // (client-projects/<project> or projects/<project>); no -Paths argument needed:
-.\tools\deploy.ps1 -Project clpr-isab.nu -Message "pulling in Slater migration" -Purge -Copy
+.\tools\deploy.ps1 -Project clpr-isab.nu -Message "pulling in Slater migration" -Copy
 
 // or explicitly list individual files when you only want a subset:
 .\tools\deploy.ps1 -Project clpr-isab.nu -Message "pulling in Slater migration" \
     -Paths "client-projects/clpr-isab.nu/index.js","client-projects/clpr-isab.nu/styling.css" \
-    -Purge -Copy
+    -Copy
 ```
 
 The script will:
 
 1. stage all changes, commit with the given message and push to ``origin``
-2. move the ``<project>-prod`` tag to the new HEAD and push that tag
-3. print the stable Webflow `<script>` tag for the jsDelivr URL
-4. optionally copy the script tag to the clipboard (`-Copy`)
-5. optionally hit the jsDelivr purge endpoint to invalidate caches (`-Purge`)
+2. generate a jsDelivr URL based on the current commit SHA (always pointing to the latest code)
+3. print the `<script>` and `<link>` tags ready to paste into Webflow
+4. optionally copy the script tags to the clipboard (`-Copy`)
+
+Because each deploy produces a unique commit SHA, the URL changes on every deployment. This ensures Webflow always loads the latest code without any CDN cache staleness—**no purging required**. Simply paste the new URL from the terminal output into Webflow after each deploy.
 
 Arguments that are not provided will be defaulted as follows:
 
-* ``-Tag`` defaults to ``<project>-prod``
+* ``-Tag`` defaults to ``<project>-prod`` (used if you switch to tag-based deployment)
 * ``-Paths`` defaults to ``projects/<project>/site.js`` (a single-element array).
 
 You may supply multiple paths as a comma-separated list or by repeating the
 ``-Paths`` parameter; PowerShell also allows the shorthand ``-Path`` via
 partial parameter name matching if you prefer.  The script will generate a
-`<script>` tag for each non-`.css` file and a `<link>` tag for stylesheets,
-purge each URL individually, and copy all tags to the clipboard.
+`<script>` tag for each non-`.css` file and a `<link>` tag for stylesheets.
+Copy the generated tags to the clipboard with the ``-Copy`` flag.
 
 ### Bash (macOS/Linux/Git Bash)
 
@@ -62,11 +63,10 @@ chmod +x tools/deploy.sh
 Usage pattern is similar to the PowerShell version:
 
 ```sh
-./tools/deploy.sh clpr-x "clpr-x: update navbar logic" clpr-x-prod projects/clpr-x/site.js true
+./tools/deploy.sh clpr-x "clpr-x: update navbar logic"
 ```
 
-The arguments behave identically, with the final boolean controlling whether
-purging is performed.
+The arguments behave identically to PowerShell: project name and commit message are required; tag and paths are optional with sensible defaults.
 
 ### Optional Git hook
 
@@ -89,7 +89,7 @@ if [[ "$branch" == "main" && "$DEPLOY" == "1" ]]; then
   # adjust paths/arguments as needed, this example assumes PowerShell on
   # Windows; for Bash call ../tools/deploy.sh instead
   pwsh -File "$(git rev-parse --show-toplevel)/tools/deploy.ps1" \
-    -Project clpr-x -Message "auto deploy from hook" -Purge -Copy
+    -Project clpr-x -Message "auto deploy from hook" -Copy
 fi
 ```
 
@@ -126,9 +126,14 @@ git config core.hooksPath .githooks
 
 The repository already contains a sample script at ``.githooks/post-push``.
 
-> **Note:** moving a tag like ``*-prod`` creates an aliased URL.  jsDelivr
-> caches those aggressively, so purging is strongly recommended when you
-> re‑deploy.  The ``-Purge``/``true`` flags trigger this automatically.
+> **Note on stable vs. fresh URLs:**  
+> By default, the script uses **commit-based URLs** that change on every deploy.  
+> This ensures Webflow always loads the latest code immediately (no cache staleness).  
+> 
+> If you instead want a **stable embedding URL that never changes**, you can modify the script to use the ``<project>-prod`` tag.  
+> This provides a single unchanging link but requires you to accept CDN caching delays (jsDelivr caches tag-based URLs for up to 1 year with `immutable` headers).  
+> You would need to manually purge or wait for the cache to expire before changes take effect.  
+> **Trade-off:** stable URL = slower updates; dynamic URL = no copy/paste hassle.
 
 ---
 
