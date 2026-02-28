@@ -403,24 +403,12 @@ a.nav-link:focus-visible .nav-link__label::after {
 }
 
 [data-cascading-viewport] {
-  position: relative;
-  overflow: hidden;
-  height: 500px;
   --gap: 0.5em;
 }
 
 [data-cascading-slide] {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
   --clip: 0;
   --radius: 0.75em;
-  clip-path: inset(0px calc(var(--clip) * 1px) round var(--radius));
-}
-
-[data-cascading-slide] > div {
-  overflow: hidden;
 }
 
 [data-cascading-slide][data-status="active"] {
