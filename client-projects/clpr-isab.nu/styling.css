@@ -401,6 +401,7 @@ a.nav-link:focus-visible .nav-link__label::after {
 [data-cascading-viewport] {
   position: relative;
   overflow: hidden;
+  height: 500px;
   --gap: 0.5em;
 }
 
