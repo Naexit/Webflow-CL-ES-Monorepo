@@ -1073,17 +1073,37 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
+  const accordionItems = document.querySelectorAll(".accordion-css__item");
   const circleItems = document.querySelectorAll(".circle-item-holder");
+  const accordionContainer = document.querySelector(".accordion-css");
 
-  // GSAP animation for floating effect
-  circleItems.forEach((item) => {
-    gsap.to(item, {
-      y: "random(-20, 20)", // Move up/down between -20px and 20px
-      x: "random(-20, 20)", // Move left/right between -20px and 20px
-      duration: "random(3, 5)", // Duration between 3 to 5 seconds
-      repeat: -1, // Infinite repeat
-      yoyo: true, // Yoyo effect back and forth
-      ease: "power1.inOut", // Smooth easing function
+  accordionItems.forEach((item) => {
+    // Add click event for each accordion item
+    const toggle = item.querySelector("[data-accordion-toggle]");
+
+    toggle.addEventListener("click", () => {
+      const isActive = item.dataset.accordionStatus === "active";
+      
+      // toggle expanded class
+      accordionContainer.classList.toggle("accordion-expanded", !isActive);
+      gsap.to(item, {
+        height: isActive ? "50px" : "200px",  // Adjust height
+        duration: 0.5,
+        onUpdate: () => {
+          // Recalculate the new positions and opacity of the circle items
+          circleItems.forEach((circle) => {
+            gsap.to(circle, {
+              y: isActive ? 20 : -80, // Shift circles according to accordion expansion
+              duration: 0.5,
+              opacity: isActive ? 0 : 1,
+              ease: "power1.out",
+            });
+          });
+        },
+      });
+
+      // Toggle active state for accordion item
+      item.dataset.accordionStatus = isActive ? "not-active" : "active";
     });
   });
 });

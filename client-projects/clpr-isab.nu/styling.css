@@ -461,10 +461,18 @@ a.nav-link:focus-visible .nav-link__label::after {
   transform: rotate(0.001deg);
 }
 
+/* Add styles for animation */
 .circle-item-holder {
   position: absolute;
-  top: 50%;   /* Center vertically */
-  left: 50%;  /* Center horizontally */
-  transform: translate(-50%, -50%);
-  will-change: transform; /* Adds hardware acceleration for smoother animations */
+  bottom: -20px;  /* Starts below visibility range */
+  left: 50%;   /* Center horizontally */
+  transform: translate(-50%, 0);
+  transition: transform 0.5s ease, opacity 0.5s ease; /* Adds smooth transition */
+  opacity: 0;  /* Hidden at the start */
+}
+
+/* State where the accordion item is expanded */
+.accordion-expanded .circle-item-holder {
+  transform: translate(-50%, -50px); /* Move upwards */
+  opacity: 1; /* Make visible */
 }
