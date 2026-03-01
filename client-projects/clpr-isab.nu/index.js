@@ -1071,3 +1071,19 @@ function initAccordionCSS() {
 document.addEventListener('DOMContentLoaded', () => {
   initAccordionCSS();
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+  const circleItems = document.querySelectorAll(".circle-item-holder");
+
+  // GSAP animation for floating effect
+  circleItems.forEach((item) => {
+    gsap.to(item, {
+      y: "random(-20, 20)", // Move up/down between -20px and 20px
+      x: "random(-20, 20)", // Move left/right between -20px and 20px
+      duration: "random(3, 5)", // Duration between 3 to 5 seconds
+      repeat: -1, // Infinite repeat
+      yoyo: true, // Yoyo effect back and forth
+      ease: "power1.inOut", // Smooth easing function
+    });
+  });
+});
