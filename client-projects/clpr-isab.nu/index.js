@@ -1072,3 +1072,97 @@ document.addEventListener('DOMContentLoaded', () => {
   initAccordionCSS();
 });
 
+// ———— Quick News Feed ————
+function initNewsFeed() {
+  // Placeholder articles — replace with real data or a fetch() call
+  const articles = [
+    {
+      date: '2 mars 2026',
+      title: 'Ny säsong på ISAB',
+      excerpt: 'Vi välkomnar våren med nya projekt och spännande uppdateringar.',
+      url: '#',
+    },
+    {
+      date: '25 feb 2026',
+      title: 'Uppdaterade tjänster',
+      excerpt: 'Läs om våra senaste tillägg i tjänsteutbudet.',
+      url: '#',
+    },
+    {
+      date: '18 feb 2026',
+      title: 'Hållbarhet i fokus',
+      excerpt: 'Vårt arbete mot en mer hållbar framtid fortsätter.',
+      url: '#',
+    },
+  ];
+
+  // Build the DOM
+  const feed = document.createElement('div');
+  feed.className = 'news-feed';
+  feed.dataset.newsFeed = 'closed';
+
+  const trigger = document.createElement('button');
+  trigger.className = 'news-feed__trigger';
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.setAttribute('aria-controls', 'news-feed-panel');
+  trigger.innerHTML =
+    '<span class="news-feed__trigger-arrow">&#8249;</span>' +
+    '<span class="news-feed__trigger-label">Nyheter</span>';
+
+  const panel = document.createElement('div');
+  panel.className = 'news-feed__panel';
+  panel.id = 'news-feed-panel';
+
+  const header = document.createElement('div');
+  header.className = 'news-feed__header';
+  header.innerHTML = '<h2 class="news-feed__title">Senaste nytt</h2>';
+
+  const list = document.createElement('ul');
+  list.className = 'news-feed__list';
+
+  articles.forEach((a) => {
+    const li = document.createElement('li');
+    li.className = 'news-feed__item';
+    li.innerHTML =
+      `<span class="news-feed__item-date">${a.date}</span>` +
+      `<h3 class="news-feed__item-heading">${a.title}</h3>` +
+      `<p class="news-feed__item-excerpt">${a.excerpt}</p>` +
+      `<a href="${a.url}" class="news-feed__item-link">Läs mer →</a>`;
+    list.appendChild(li);
+  });
+
+  panel.appendChild(header);
+  panel.appendChild(list);
+  feed.appendChild(trigger);
+  feed.appendChild(panel);
+  document.body.appendChild(feed);
+
+  // Toggle open / closed
+  trigger.addEventListener('click', () => {
+    const isOpen = feed.dataset.newsFeed === 'open';
+    feed.dataset.newsFeed = isOpen ? 'closed' : 'open';
+    trigger.setAttribute('aria-expanded', String(!isOpen));
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && feed.dataset.newsFeed === 'open') {
+      feed.dataset.newsFeed = 'closed';
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.focus();
+    }
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', (e) => {
+    if (feed.dataset.newsFeed === 'open' && !feed.contains(e.target)) {
+      feed.dataset.newsFeed = 'closed';
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initNewsFeed();
+});
+
