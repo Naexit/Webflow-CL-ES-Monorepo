@@ -1074,40 +1074,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ———— Quick News Feed ————
 function initNewsFeed() {
-  // Placeholder articles — replace with real data or a fetch() call
-  const articles = [
-    {
-      date: '2 mars 2026',
-      title: 'Ny säsong på ISAB',
-      excerpt: 'Vi välkomnar våren med nya projekt och spännande uppdateringar.',
-      url: '#',
-    },
-    {
-      date: '25 feb 2026',
-      title: 'Uppdaterade tjänster',
-      excerpt: 'Läs om våra senaste tillägg i tjänsteutbudet.',
-      url: '#',
-    },
-    {
-      date: '18 feb 2026',
-      title: 'Hållbarhet i fokus',
-      excerpt: 'Vårt arbete mot en mer hållbar framtid fortsätter.',
-      url: '#',
-    },
-  ];
-
-  // Build the DOM
+  // Build the DOM — wrapper uses display:contents so it has no layout impact
   const feed = document.createElement('div');
-  feed.className = 'news-feed';
+  feed.style.display = 'contents';
   feed.dataset.newsFeed = 'closed';
 
   const trigger = document.createElement('button');
   trigger.className = 'news-feed__trigger';
   trigger.setAttribute('aria-expanded', 'false');
   trigger.setAttribute('aria-controls', 'news-feed-panel');
-  trigger.innerHTML =
-    '<span class="news-feed__trigger-arrow">&#8249;</span>' +
-    '<span class="news-feed__trigger-label">Nyheter</span>';
+  trigger.setAttribute('aria-label', 'Öppna nyhetsflöde');
+  trigger.innerHTML = '<span class="news-feed__trigger-arrow"></span>';
 
   const panel = document.createElement('div');
   panel.className = 'news-feed__panel';
@@ -1119,23 +1096,16 @@ function initNewsFeed() {
 
   const list = document.createElement('ul');
   list.className = 'news-feed__list';
-
-  articles.forEach((a) => {
-    const li = document.createElement('li');
-    li.className = 'news-feed__item';
-    li.innerHTML =
-      `<span class="news-feed__item-date">${a.date}</span>` +
-      `<h3 class="news-feed__item-heading">${a.title}</h3>` +
-      `<p class="news-feed__item-excerpt">${a.excerpt}</p>` +
-      `<a href="${a.url}" class="news-feed__item-link">Läs mer →</a>`;
-    list.appendChild(li);
-  });
+  list.innerHTML = '<li class="news-feed__item" style="text-align:center;color:#999;">Laddar nyheter…</li>';
 
   panel.appendChild(header);
   panel.appendChild(list);
   feed.appendChild(trigger);
   feed.appendChild(panel);
   document.body.appendChild(feed);
+
+  // Fetch real articles from the /news collection page
+  fetchNewsFeedArticles(list);
 
   // Toggle open / closed
   trigger.addEventListener('click', () => {
@@ -1160,6 +1130,86 @@ function initNewsFeed() {
       trigger.setAttribute('aria-expanded', 'false');
     }
   });
+}
+
+async function fetchNewsFeedArticles(listEl) {
+  try {
+    const res = await fetch('/news');
+    if (!res.ok) throw new Error(res.status);
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+
+    // Webflow collection items or fall back to any link pointing at /article/
+    const items = doc.querySelectorAll('.w-dyn-item');
+    const articles = [];
+
+    if (items.length) {
+      items.forEach((item) => {
+        const link = item.querySelector('a[href*="/article/"]');
+        if (!link) return;
+        const url = link.getAttribute('href');
+
+        // Extract heading text (try h-tags first, then the link text itself)
+        const headingEl = item.querySelector('h1, h2, h3, h4, h5, h6');
+        const title = headingEl
+          ? headingEl.textContent.trim()
+          : link.textContent.trim();
+
+        // Extract date — look for a time element or text that looks like a date
+        const timeEl = item.querySelector('time');
+        let date = '';
+        if (timeEl) {
+          date = timeEl.textContent.trim();
+        } else {
+          // Walk text nodes and look for a date-like string
+          const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
+          while (walker.nextNode()) {
+            const txt = walker.currentNode.textContent.trim();
+            if (/\b\d{4}\b/.test(txt) && /[A-Za-z]/.test(txt) && txt.length < 40) {
+              date = txt;
+              break;
+            }
+          }
+        }
+
+        articles.push({ title, url, date });
+      });
+    } else {
+      // Fallback: no .w-dyn-item — grab all unique /article/ links
+      const seen = new Set();
+      doc.querySelectorAll('a[href*="/article/"]').forEach((link) => {
+        const url = link.getAttribute('href');
+        if (seen.has(url)) return;
+        seen.add(url);
+        articles.push({
+          title: link.textContent.trim(),
+          url,
+          date: '',
+        });
+      });
+    }
+
+    // Render
+    listEl.innerHTML = '';
+
+    if (!articles.length) {
+      listEl.innerHTML = '<li class="news-feed__item" style="color:#999;">Inga nyheter att visa.</li>';
+      return;
+    }
+
+    articles.forEach((a) => {
+      const li = document.createElement('li');
+      li.className = 'news-feed__item';
+      li.innerHTML =
+        (a.date ? `<span class="news-feed__item-date">${a.date}</span>` : '') +
+        `<h3 class="news-feed__item-heading">${a.title}</h3>` +
+        `<a href="${a.url}" class="news-feed__item-link">Läs mer →</a>`;
+      listEl.appendChild(li);
+    });
+  } catch (err) {
+    listEl.innerHTML =
+      '<li class="news-feed__item" style="color:#999;">Kunde inte ladda nyheter.</li>';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
