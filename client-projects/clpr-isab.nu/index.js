@@ -1224,8 +1224,37 @@ function initBasicGSAPSlider() {
 
     const collection = root.querySelector('[data-gsap-slider-collection]');
     const track      = root.querySelector('[data-gsap-slider-list]');
-    const items      = Array.from(root.querySelectorAll('[data-gsap-slider-item]'));
+    let   items      = Array.from(root.querySelectorAll('[data-gsap-slider-item]'));
     const controls   = Array.from(root.querySelectorAll('[data-gsap-slider-control]'));
+
+    // If there are fewer slides than the slides‑per‑view setting we clone
+    // them so that there is always content to slide and we can create an
+    // “infinite” wrap effect. Clones are marked and hidden from assistive
+    // technology.
+    const styles    = getComputedStyle(root);
+    let   spvVar    = parseFloat(styles.getPropertyValue('--slider-spv'));
+    if (isNaN(spvVar)) {
+      const rect = items[0] && items[0].getBoundingClientRect();
+      const marginRight = rect ? parseFloat(getComputedStyle(items[0]).marginRight) : 0;
+      const slideW = rect ? rect.width + marginRight : 0;
+      if (slideW) spvVar = collection.clientWidth / slideW;
+    }
+    const spv = Math.max(1, spvVar);
+
+    if (items.length <= spv) {
+      const original = items.slice();
+      // figure out how many copies we need to pass the threshold
+      const needed = Math.ceil((spv + 1) / original.length);
+      for (let i = 0; i < needed; i++) {
+        original.forEach(slide => {
+          const clone = slide.cloneNode(true);
+          clone.setAttribute('data-gsap-slider-clone', 'true');
+          clone.setAttribute('aria-hidden', 'true');
+          track.appendChild(clone);
+        });
+      }
+      items = Array.from(root.querySelectorAll('[data-gsap-slider-item]'));
+    }
 
     // Inject aria attributes
     root.setAttribute('role','region');
@@ -1246,6 +1275,8 @@ function initBasicGSAPSlider() {
       const dir = btn.getAttribute('data-gsap-slider-control');
       btn.setAttribute('role','button');
       btn.setAttribute('aria-label', dir==='prev' ? 'Previous Slide' : 'Next Slide');
+      // in infinite mode we never disable the buttons, otherwise start
+      // disabled and the status updater will enable/disable later
       btn.disabled = true;
       btn.setAttribute('aria-disabled','true');
     });
@@ -1318,14 +1349,24 @@ function initBasicGSAPSlider() {
     if (full < maxIndex) {
       snapPoints.push(-maxIndex * slideW);
     }
+    // once we cloned we may have more snap points than originals; if the
+    // design requires wrap we will never disable controls and will wrap
+    // manually on click
+
 
     let activeIndex    = 0;
     const setX         = gsap.quickSetter(track,'x','px');
     let collectionRect = collection.getBoundingClientRect();
 
     function updateStatus(x) {
-      if (x > maxX || x < minX) {
-        return;
+      // if we somehow drift past the bounds we'll wrap the value so
+      // activeIndex calculations still make sense; this also keeps the
+      // drag/throw experience feeling circular. The visual jump back to
+      // the mirrored position is handled by callers if desired.
+      if (x > maxX) {
+        x = minX + (x - maxX);
+      } else if (x < minX) {
+        x = maxX - (minX - x);
       }
 
       // Clamp and find closest snap
@@ -1352,25 +1393,25 @@ function initBasicGSAPSlider() {
         slide.setAttribute('tabindex',         i === activeIndex ? '0'    : '-1');
       });
 
-      // Update Controls
+      // Update Controls – for an infinite wrap we keep them active all
+      // the time and simply update the status attribute so the CSS can
+      // fade/disable visually if desired.
       controls.forEach(btn => {
-        const dir = btn.getAttribute('data-gsap-slider-control');
-        const can = dir === 'prev'
-          ? activeIndex > 0
-          : activeIndex < snapPoints.length - 1;
-
-        btn.disabled = !can;
-        btn.setAttribute('aria-disabled', can ? 'false' : 'true');
-        btn.setAttribute('data-gsap-slider-control-status', can ? 'active' : 'not-active');
+        btn.disabled = false;
+        btn.setAttribute('aria-disabled','false');
+        btn.setAttribute('data-gsap-slider-control-status','active');
       });
     }
 
     controls.forEach(btn => {
       const dir = btn.getAttribute('data-gsap-slider-control');
       btn.addEventListener('click', () => {
-        if (btn.disabled) return;
+        if (btn.disabled) return; // should never happen in infinite mode
         const delta = dir === 'next' ? 1 : -1;
-        const target = activeIndex + delta;
+        let target = activeIndex + delta;
+        // wrap around if we passed the ends
+        if (target < 0) target = snapPoints.length - 1;
+        else if (target >= snapPoints.length) target = 0;
         gsap.to(track, {
           duration: 0.4,
           x: snapPoints[target],

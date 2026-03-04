@@ -613,8 +613,45 @@ a.nav-link:focus-visible .nav-link__label::after {
 
 [data-gsap-slider-init] {
   --slider-status: on; /* Turn slider on/off */
-  --slider-spv: 3; /* Slides per view */ 
+  --slider-spv: 5; /* Slides per view – bump up for wider carousel */
   --slider-gap: 1.5em; /* Slides Gap */
+}
+
+/* automatically number each slide and add an icon; markup can be blank in Webflow */
+[data-gsap-slider-list] {
+  counter-reset: gsap-slide;
+}
+[data-gsap-slider-item] {
+  counter-increment: gsap-slide;
+  position: relative; /* for pseudo elements */
+}
+[data-gsap-slider-item]::before {
+  content: counter(gsap-slide);
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #ffffff;
+}
+[data-gsap-slider-item]::after {
+  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23fff'/%3E%3C/svg%3E");
+  /* replace the data‑URI with your real icon or leave as placeholder */
+  position: absolute;
+  top: 0.75rem;
+  left: 2.5rem;
+  width: 1rem;
+  height: 1rem;
+}
+
+/* slide title / description tweaks */
+.demo-card__title {
+  margin-top: 3.5rem; /* push title down under number/icon */
+}
+.demo-card__description {
+  margin-top: 0.5rem; /* give paragraph some breathing room */
+  font-size: 0.9rem;
+  color: #ccc;
 }
 
 @media screen and (max-width: 991px) {
