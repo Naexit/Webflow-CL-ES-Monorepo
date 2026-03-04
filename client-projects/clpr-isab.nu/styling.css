@@ -611,3 +611,60 @@ a.nav-link:focus-visible .nav-link__label::after {
   }
 }
 
+[data-gsap-slider-init] {
+  --slider-status: on; /* Turn slider on/off */
+  --slider-spv: 3; /* Slides per view */ 
+  --slider-gap: 1.5em; /* Slides Gap */
+}
+
+@media screen and (max-width: 991px) {
+   [data-gsap-slider-init] {
+    --slider-status: on; /* Turn slider on/off */
+    --slider-spv: 2.25; /* Slides per view */ 
+    --slider-gap: 1.5em; /* Slides Gap */
+  } 
+}
+
+@media screen and (max-width: 767px) {
+  [data-gsap-slider-init] { 
+    --slider-status: on; /* Turn slider on/off */
+    --slider-spv: 1.15; /* Slides per view */ 
+    --slider-gap: 1em; /* Gap */
+  }
+}
+
+[data-gsap-slider-item]:last-child {
+  margin-right: 0;
+}
+
+/* Controls */
+[data-gsap-slider-status="not-active"] [data-gsap-slider-controls] {
+  display: none;
+}
+
+[data-gsap-slider-control-status="not-active"] { 
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Customization */
+
+.gsap-slider__control {
+  transition: opacity 0.3s ease;
+}
+
+.demo-card {
+  transition: all 0.3s ease;
+}
+
+[data-gsap-slider-item-status="not-active"] .demo-card {
+  background-color: #131313;
+}
+
+.demo-card__tag {
+  transition: all 0.3s ease;
+}
+
+[data-gsap-slider-item-status="not-active"] .demo-card__tag {
+  opacity: 0;
+}
