@@ -714,6 +714,8 @@ a.nav-link:focus-visible .nav-link__label::after {
 }
 
 [data-css-marquee-list] {
+  display: flex;
+  white-space: nowrap;
   animation: translateX 30s linear;
   animation-iteration-count: infinite;
   animation-play-state: paused;

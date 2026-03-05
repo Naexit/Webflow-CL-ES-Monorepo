@@ -1533,6 +1533,6 @@ function initCSSMarquee() {
 }
 
 // Initialize CSS Marquee
-document.addEventListener('DOMContentLoaded', function() {
+window.addEventListener('load', function() {
   initCSSMarquee();
 });
