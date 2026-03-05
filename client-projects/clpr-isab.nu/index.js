@@ -1498,6 +1498,21 @@ function initCSSMarquee() {
     });
   });
 
+  // Set the container width to show only 3 images
+  marquees.forEach(marquee => {
+    const list = marquee.querySelector('[data-css-marquee-list]');
+    if (list) {
+      const images = list.querySelectorAll('img');
+      if (images.length > 0) {
+        const imageWidth = images[0].offsetWidth;
+        if (imageWidth > 0) {
+          marquee.style.width = (3 * imageWidth) + 'px';
+          marquee.style.overflow = 'hidden';
+        }
+      }
+    }
+  });
+
   // Create an IntersectionObserver to check if the marquee container is in view
   const observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
