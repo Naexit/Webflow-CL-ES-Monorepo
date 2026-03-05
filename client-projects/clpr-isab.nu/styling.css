@@ -705,3 +705,16 @@ a.nav-link:focus-visible .nav-link__label::after {
 [data-gsap-slider-item-status="not-active"] .demo-card__tag {
   opacity: 0;
 }
+
+/* CSS Keyframe Animation */
+@keyframes translateX { 
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+[data-css-marquee-list] {
+  animation: translateX 30s linear;
+  animation-iteration-count: infinite;
+  animation-play-state: paused;
+}
