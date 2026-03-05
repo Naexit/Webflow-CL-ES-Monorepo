@@ -1284,14 +1284,14 @@ function initBasicGSAPSlider() {
     // Determine if slider runs
     const slideStyles      = getComputedStyle(root);
     const statusVar   = slideStyles.getPropertyValue('--slider-status').trim();
-    let   spvVar      = parseFloat(slideStyles.getPropertyValue('--slider-spv'));
+    let   sliderSpvVar      = parseFloat(slideStyles.getPropertyValue('--slider-spv'));
     const rect        = items[0].getBoundingClientRect();
     const marginRight = parseFloat(getComputedStyle(items[0]).marginRight);
     const slideW      = rect.width + marginRight;
-    if (isNaN(spvVar)) {
-      spvVar = collection.clientWidth / slideW;
+    if (isNaN(sliderSpvVar)) {
+      sliderSpvVar = collection.clientWidth / slideW;
     }
-    const spv           = Math.max(1, Math.min(spvVar, items.length));
+    const spv           = Math.max(1, Math.min(sliderSpvVar, items.length));
     const sliderEnabled = statusVar==='on' && spv < items.length;
     root.setAttribute('data-gsap-slider-status', sliderEnabled ? 'active' : 'not-active');
 
