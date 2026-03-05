@@ -1282,9 +1282,9 @@ function initBasicGSAPSlider() {
     });
 
     // Determine if slider runs
-    const styles      = getComputedStyle(root);
-    const statusVar   = styles.getPropertyValue('--slider-status').trim();
-    let   spvVar      = parseFloat(styles.getPropertyValue('--slider-spv'));
+    const slideStyles      = getComputedStyle(root);
+    const statusVar   = slideStyles.getPropertyValue('--slider-status').trim();
+    let   spvVar      = parseFloat(slideStyles.getPropertyValue('--slider-spv'));
     const rect        = items[0].getBoundingClientRect();
     const marginRight = parseFloat(getComputedStyle(items[0]).marginRight);
     const slideW      = rect.width + marginRight;
