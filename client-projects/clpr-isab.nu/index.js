@@ -1291,8 +1291,8 @@ function initBasicGSAPSlider() {
     if (isNaN(sliderSpvVar)) {
       sliderSpvVar = collection.clientWidth / slideW;
     }
-    const spv           = Math.max(1, Math.min(sliderSpvVar, items.length));
-    const sliderEnabled = statusVar==='on' && spv < items.length;
+    const sliderSpv           = Math.max(1, Math.min(sliderSpvVar, items.length));
+    const sliderEnabled = statusVar==='on' && sliderSpv < items.length;
     root.setAttribute('data-gsap-slider-status', sliderEnabled ? 'active' : 'not-active');
 
     if (!sliderEnabled) {
