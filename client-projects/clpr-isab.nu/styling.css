@@ -684,16 +684,54 @@ a.nav-link:focus-visible .nav-link__label::after {
 
 .demo-card {
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
-[data-gsap-slider-item-status="not-active"] .demo-card {
-  background-color: #131313;
+/* Dark overlay via pseudo-element — works over absolute images */
+.demo-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Active slide: no overlay */
+[data-gsap-slider-item-status="active"] .demo-card::after {
+  opacity: 0;
+}
+
+/* In-view (beside center): moderately dark but still readable */
+[data-gsap-slider-item-status="inview"] .demo-card::after {
+  opacity: 0.55;
+}
+
+/* Off-screen / farthest away: very dark, barely visible */
+[data-gsap-slider-item-status="not-active"] .demo-card::after {
+  opacity: 0.85;
+}
+
+/* Keep info box above the overlay */
+.demo-card__info {
+  z-index: 2;
 }
 
 .demo-card__tag {
   transition: all 0.3s ease;
+  z-index: 2;
+  position: relative;
 }
 
 [data-gsap-slider-item-status="not-active"] .demo-card__tag {
   opacity: 0;
+}
+
+/* Kill ALL transitions during warp (prevents flicker on clones + ::after overlays) */
+.gsap-slider--warping *,
+.gsap-slider--warping *::after,
+.gsap-slider--warping *::before {
+  transition: none !important;
 }

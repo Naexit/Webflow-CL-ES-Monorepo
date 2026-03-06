@@ -1432,21 +1432,15 @@ function initBasicGSAPSlider() {
       while (x > homeMax + slideW * 0.45) { x -= oneSetW; shifted = true; }
       while (x < homeMin - slideW * 0.45) { x += oneSetW; shifted = true; }
       if (shifted) {
-        // Suppress CSS transitions so the instant jump never flickers
-        allItems.forEach(el => el.style.transition = 'none');
-        const cards = track.querySelectorAll('.demo-card');
-        cards.forEach(c => c.style.transition = 'none');
-        const tags = track.querySelectorAll('.demo-card__tag');
-        tags.forEach(t => t.style.transition = 'none');
+        // Suppress ALL CSS transitions (including ::after overlays)
+        track.classList.add('gsap-slider--warping');
 
         gsap.set(track, { x: x });
         if (root._sliderDraggable) root._sliderDraggable.update();
 
         // Force reflow then restore transitions
         void track.offsetHeight;
-        allItems.forEach(el => el.style.transition = '');
-        cards.forEach(c => c.style.transition = '');
-        tags.forEach(t => t.style.transition = '');
+        track.classList.remove('gsap-slider--warping');
       }
     }
 
