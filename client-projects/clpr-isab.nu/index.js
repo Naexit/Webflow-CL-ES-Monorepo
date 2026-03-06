@@ -1220,52 +1220,57 @@ gsap.registerPlugin(Draggable, InertiaPlugin);
 
 function initBasicGSAPSlider() {
   document.querySelectorAll('[data-gsap-slider-init]').forEach(root => {
-    if (root._sliderDraggable) root._sliderDraggable.kill();
+    /* ── Cleanup previous instance ── */
+    if (root._sliderDraggable) { root._sliderDraggable.kill(); root._sliderDraggable = null; }
+    root.querySelectorAll('[data-gsap-slider-clone]').forEach(c => c.remove());
 
     const collection = root.querySelector('[data-gsap-slider-collection]');
     const track      = root.querySelector('[data-gsap-slider-list]');
-    const items      = Array.from(root.querySelectorAll('[data-gsap-slider-item]'));
+    const origItems  = Array.from(root.querySelectorAll('[data-gsap-slider-item]:not([data-gsap-slider-clone])'));
     const controls   = Array.from(root.querySelectorAll('[data-gsap-slider-control]'));
+    const N          = origItems.length;
 
-    // Inject aria attributes
-    root.setAttribute('role','region');
-    root.setAttribute('aria-roledescription','carousel');
-    root.setAttribute('aria-label','Slider');
-    collection.setAttribute('role','group');
-    collection.setAttribute('aria-roledescription','Slides List');
-    collection.setAttribute('aria-label','Slides');
-    items.forEach((slide,i) => {
-      slide.setAttribute('role','group');
-      slide.setAttribute('aria-roledescription','Slide');
-      slide.setAttribute('aria-label',`Slide ${i+1} of ${items.length}`);
-      slide.setAttribute('aria-hidden','true');
-      slide.setAttribute('aria-selected','false');
-      slide.setAttribute('tabindex','-1');
+    if (!N) return;
+
+    /* ── Aria ── */
+    root.setAttribute('role', 'region');
+    root.setAttribute('aria-roledescription', 'carousel');
+    root.setAttribute('aria-label', 'Slider');
+    collection.setAttribute('role', 'group');
+    collection.setAttribute('aria-roledescription', 'Slides List');
+    collection.setAttribute('aria-label', 'Slides');
+    origItems.forEach((slide, i) => {
+      slide.setAttribute('role', 'group');
+      slide.setAttribute('aria-roledescription', 'Slide');
+      slide.setAttribute('aria-label', `Slide ${i + 1} of ${N}`);
+      slide.setAttribute('aria-hidden', 'true');
+      slide.setAttribute('aria-selected', 'false');
+      slide.setAttribute('tabindex', '-1');
     });
     controls.forEach(btn => {
       const dir = btn.getAttribute('data-gsap-slider-control');
-      btn.setAttribute('role','button');
-      btn.setAttribute('aria-label', dir==='prev' ? 'Previous Slide' : 'Next Slide');
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('aria-label', dir === 'prev' ? 'Previous Slide' : 'Next Slide');
       btn.disabled = true;
-      btn.setAttribute('aria-disabled','true');
+      btn.setAttribute('aria-disabled', 'true');
     });
 
-    // Determine if slider runs
-    const styles      = getComputedStyle(root);
-    const statusVar   = styles.getPropertyValue('--slider-status').trim();
-    let   spvVar      = parseFloat(styles.getPropertyValue('--slider-spv'));
-    const rect        = items[0].getBoundingClientRect();
-    const marginRight = parseFloat(getComputedStyle(items[0]).marginRight);
-    const slideW      = rect.width + marginRight;
-    if (isNaN(spvVar)) {
-      spvVar = collection.clientWidth / slideW;
-    }
-    const spv           = Math.max(1, Math.min(spvVar, items.length));
-    const sliderEnabled = statusVar==='on' && spv < items.length;
+    /* ── Read CSS custom properties ── */
+    const styles    = getComputedStyle(root);
+    const statusVar = styles.getPropertyValue('--slider-status').trim();
+    let   spvVar    = parseFloat(styles.getPropertyValue('--slider-spv'));
+    const itemRect  = origItems[0].getBoundingClientRect();
+    const gapPx     = parseFloat(getComputedStyle(origItems[0]).marginRight) || 0;
+    const slideW    = itemRect.width + gapPx;
+
+    if (isNaN(spvVar)) spvVar = collection.clientWidth / slideW;
+    const spv           = Math.max(1, Math.min(spvVar, N));
+    const sliderEnabled = statusVar === 'on' && spv < N;
+
     root.setAttribute('data-gsap-slider-status', sliderEnabled ? 'active' : 'not-active');
 
     if (!sliderEnabled) {
-      // Teardown when disabled
+      /* ── Teardown when disabled ── */
       track.removeAttribute('style');
       track.onmouseenter = null;
       track.onmouseleave = null;
@@ -1276,7 +1281,7 @@ function initBasicGSAPSlider() {
       collection.removeAttribute('role');
       collection.removeAttribute('aria-roledescription');
       collection.removeAttribute('aria-label');
-      items.forEach(slide => {
+      origItems.forEach(slide => {
         slide.removeAttribute('role');
         slide.removeAttribute('aria-roledescription');
         slide.removeAttribute('aria-label');
@@ -1295,106 +1300,173 @@ function initBasicGSAPSlider() {
       return;
     }
 
-    // Track hover state
-    track.onmouseenter = () => {
-      track.setAttribute('data-gsap-slider-list-status','grab');
-    };
-    track.onmouseleave = () => {
-      track.removeAttribute('data-gsap-slider-list-status');
-    };
+    /* ── Clone slides for infinite loop ──
+     *  Layout: [SETS copies before][originals][SETS copies after]
+     *  After each throw / button-click we silently warp the track back
+     *  to the "home" (original) range so the loop feels infinite. */
+    const viewW   = collection.clientWidth;
+    const oneSetW = N * slideW;                               // width of one full set
+    const SETS    = Math.max(2, Math.ceil(viewW / oneSetW) + 1); // clone sets per side
 
-    //Ccalculate bounds and snap points
-    const vw        = collection.clientWidth;
-    const tw        = track.scrollWidth;
-    const maxScroll = Math.max(tw - vw, 0);
-    const minX      = -maxScroll;
-    const maxX      = 0;
-    const maxIndex  = maxScroll / slideW;
-    const full      = Math.floor(maxIndex);
-    const snapPoints = [];
-    for (let i = 0; i <= full; i++) {
-      snapPoints.push(-i * slideW);
-    }
-    if (full < maxIndex) {
-      snapPoints.push(-maxIndex * slideW);
-    }
-
-    let activeIndex    = 0;
-    const setX         = gsap.quickSetter(track,'x','px');
-    let collectionRect = collection.getBoundingClientRect();
-
-    function updateStatus(x) {
-      if (x > maxX || x < minX) {
-        return;
+    for (let s = 0; s < SETS; s++) {
+      for (let i = N - 1; i >= 0; i--) {
+        const cl = origItems[i].cloneNode(true);
+        cl.setAttribute('data-gsap-slider-clone', '');
+        track.insertBefore(cl, track.firstChild);
       }
-
-      // Clamp and find closest snap
-      const calcX = x > maxX ? maxX : (x < minX ? minX : x);
-      let closest = snapPoints[0];
-      snapPoints.forEach(pt => {
-        if (Math.abs(pt - calcX) < Math.abs(closest - calcX)) {
-          closest = pt;
-        }
-      });
-      activeIndex = snapPoints.indexOf(closest);
-
-      // Update Slide Attributes
-      items.forEach((slide,i) => {
-        const r           = slide.getBoundingClientRect();
-        const leftEdge    = r.left - collectionRect.left;
-        const slideCenter = leftEdge + r.width/2;
-        const inView      = slideCenter > 0 && slideCenter < collectionRect.width;
-        const status      = i === activeIndex ? 'active' : inView ? 'inview' : 'not-active';
-
-        slide.setAttribute('data-gsap-slider-item-status', status);
-        slide.setAttribute('aria-selected',    i === activeIndex ? 'true' : 'false');
-        slide.setAttribute('aria-hidden',      inView ? 'false' : 'true');
-        slide.setAttribute('tabindex',         i === activeIndex ? '0'    : '-1');
-      });
-
-      // Update Controls
-      controls.forEach(btn => {
-        const dir = btn.getAttribute('data-gsap-slider-control');
-        const can = dir === 'prev'
-          ? activeIndex > 0
-          : activeIndex < snapPoints.length - 1;
-
-        btn.disabled = !can;
-        btn.setAttribute('aria-disabled', can ? 'false' : 'true');
-        btn.setAttribute('data-gsap-slider-control-status', can ? 'active' : 'not-active');
-      });
+    }
+    for (let s = 0; s < SETS; s++) {
+      for (let i = 0; i < N; i++) {
+        const cl = origItems[i].cloneNode(true);
+        cl.setAttribute('data-gsap-slider-clone', '');
+        track.appendChild(cl);
+      }
     }
 
-    controls.forEach(btn => {
-      const dir = btn.getAttribute('data-gsap-slider-control');
-      btn.addEventListener('click', () => {
-        if (btn.disabled) return;
-        const delta = dir === 'next' ? 1 : -1;
-        const target = activeIndex + delta;
-        gsap.to(track, {
-          duration: 0.4,
-          x: snapPoints[target],
-          onUpdate: () => updateStatus(gsap.getProperty(track,'x'))
-        });
-      });
+    const allItems     = Array.from(track.querySelectorAll('[data-gsap-slider-item]'));
+    const origStartIdx = SETS * N;   // index of first original in allItems
+
+    // Aria for cloned items
+    allItems.forEach((s, i) => {
+      s.setAttribute('role', 'group');
+      s.setAttribute('aria-roledescription', 'Slide');
+      s.setAttribute('aria-label', `Slide ${(i % N) + 1} of ${N}`);
+      s.setAttribute('aria-hidden', 'true');
+      s.setAttribute('aria-selected', 'false');
+      s.setAttribute('tabindex', '-1');
     });
 
-    // Initialize Draggable
+    /* ── Track hover cursors ── */
+    track.onmouseenter = () => track.setAttribute('data-gsap-slider-list-status', 'grab');
+    track.onmouseleave = () => track.removeAttribute('data-gsap-slider-list-status');
+
+    /* ── Controls always active in loop mode ── */
+    controls.forEach(btn => {
+      btn.disabled = false;
+      btn.setAttribute('aria-disabled', 'false');
+      btn.setAttribute('data-gsap-slider-control-status', 'active');
+    });
+
+    /* ── Geometry ──
+     *  peekPx: a small right-shift so a sliver of the previous slide
+     *          peeks on the left edge, giving the "items on both sides" look. */
+    const peekPx = Math.round(slideW * 0.15);
+
+    // Home-range snap points (one per original slide)
+    const snapBase = [];
+    for (let j = 0; j < N; j++) {
+      snapBase.push(-(origStartIdx + j) * slideW + peekPx);
+    }
+    const homeMax = snapBase[0];          // most-positive home snap
+    const homeMin = snapBase[N - 1];      // most-negative home snap
+
+    // Deliberately wide bounds so the user never hits the edge
+    const boundsMin = -(allItems.length * slideW);
+    const boundsMax = slideW;
+
+    let   activeOrigIdx = 0;
+    const setX          = gsap.quickSetter(track, 'x', 'px');
+    let   colRect       = collection.getBoundingClientRect();
+
+    /* ── Snap helper: normalize any x to the home range, find closest ── */
+    function closestSnap(x) {
+      let n = x, k = 0;
+      while (n > homeMax + slideW * 0.45) { n -= oneSetW; k++; }
+      while (n < homeMin - slideW * 0.45) { n += oneSetW; k--; }
+      let best = snapBase[0], bestD = Math.abs(snapBase[0] - n);
+      for (let j = 1; j < N; j++) {
+        const d = Math.abs(snapBase[j] - n);
+        if (d < bestD) { best = snapBase[j]; bestD = d; }
+      }
+      return best + k * oneSetW;
+    }
+
+    /* ── Which original index a position maps to ── */
+    function origIndexAt(x) {
+      let n = x;
+      while (n > homeMax + slideW * 0.45) n -= oneSetW;
+      while (n < homeMin - slideW * 0.45) n += oneSetW;
+      let best = 0, bestD = Math.abs(snapBase[0] - n);
+      for (let j = 1; j < N; j++) {
+        const d = Math.abs(snapBase[j] - n);
+        if (d < bestD) { best = j; bestD = d; }
+      }
+      return best;
+    }
+
+    /* ── Warp to home range (invisible reposition) ── */
+    function warpHome() {
+      let x = gsap.getProperty(track, 'x');
+      let shifted = false;
+      while (x > homeMax + slideW * 0.45) { x -= oneSetW; shifted = true; }
+      while (x < homeMin - slideW * 0.45) { x += oneSetW; shifted = true; }
+      if (shifted) {
+        gsap.set(track, { x: x });
+        if (root._sliderDraggable) root._sliderDraggable.update();
+      }
+    }
+
+    /* ── Update slide statuses ── */
+    function updateStatus(x) {
+      colRect       = collection.getBoundingClientRect();
+      activeOrigIdx = origIndexAt(x);
+
+      let activeMarked = false;
+      allItems.forEach((slide, i) => {
+        const r      = slide.getBoundingClientRect();
+        const center = (r.left - colRect.left) + r.width / 2;
+        const inView = center > -10 && center < colRect.width + 10;
+        const oIdx   = i % N;
+
+        let status;
+        if (inView && !activeMarked && oIdx === activeOrigIdx) {
+          status = 'active';
+          activeMarked = true;
+        } else if (inView) {
+          status = 'inview';
+        } else {
+          status = 'not-active';
+        }
+
+        slide.setAttribute('data-gsap-slider-item-status', status);
+        slide.setAttribute('aria-selected', status === 'active' ? 'true' : 'false');
+        slide.setAttribute('aria-hidden',  inView ? 'false' : 'true');
+        slide.setAttribute('tabindex',     status === 'active' ? '0' : '-1');
+      });
+    }
+
+    /* ── Prev / Next buttons (remove old handler to avoid stacking on resize) ── */
+    controls.forEach(btn => {
+      if (btn._sliderClickHandler) btn.removeEventListener('click', btn._sliderClickHandler);
+      const dir = btn.getAttribute('data-gsap-slider-control');
+      btn._sliderClickHandler = () => {
+        const curX   = gsap.getProperty(track, 'x');
+        const target = dir === 'next' ? curX - slideW : curX + slideW;
+        gsap.to(track, {
+          duration: 0.4,
+          x: target,
+          ease: 'power2.out',
+          onUpdate()   { updateStatus(gsap.getProperty(track, 'x')); },
+          onComplete() { warpHome(); updateStatus(gsap.getProperty(track, 'x')); }
+        });
+      };
+      btn.addEventListener('click', btn._sliderClickHandler);
+    });
+
+    /* ── Draggable ── */
     root._sliderDraggable = Draggable.create(track, {
       type: 'x',
-      // cursor: 'inherit',
-      // activeCursor: 'inherit',
       inertia: true,
-      bounds: {minX, maxX},
+      bounds: { minX: boundsMin, maxX: boundsMax },
       throwResistance: 2000,
       dragResistance: 0.05,
       maxDuration: 0.6,
       minDuration: 0.2,
-      edgeResistance: 0.75,
-      snap: {x: snapPoints, duration: 0.4},
+      edgeResistance: 0.85,
+      snap: { x: function(val) { return closestSnap(val); } },
       onPress() {
-        track.setAttribute('data-gsap-slider-list-status','grabbing');
-        collectionRect = collection.getBoundingClientRect();
+        track.setAttribute('data-gsap-slider-list-status', 'grabbing');
+        colRect = collection.getBoundingClientRect();
       },
       onDrag() {
         setX(this.x);
@@ -1406,19 +1478,22 @@ function initBasicGSAPSlider() {
       },
       onThrowComplete() {
         setX(this.endX);
-        updateStatus(this.endX);
-        track.setAttribute('data-gsap-slider-list-status','grab');
+        warpHome();
+        updateStatus(gsap.getProperty(track, 'x'));
+        track.setAttribute('data-gsap-slider-list-status', 'grab');
       },
       onRelease() {
         setX(this.x);
         updateStatus(this.x);
-        track.setAttribute('data-gsap-slider-list-status','grab');
+        track.setAttribute('data-gsap-slider-list-status', 'grab');
       }
     })[0];
 
-    // Initial state
-    setX(0);
-    updateStatus(0);
+    /* ── Initial position ──
+     *  Start at the first original slide; the peek offset + clones to the
+     *  left ensure content is visible on both sides of the viewport. */
+    setX(snapBase[0]);
+    updateStatus(snapBase[0]);
   });
 }
 
