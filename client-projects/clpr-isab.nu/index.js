@@ -1301,21 +1301,29 @@ function initBasicGSAPSlider() {
     }
 
     /* ── Inject info box into each slide card (before cloning) ── */
+    const slideContent = [
+      { heading: 'Stålarbeten',      paragraph: 'Tillverkning och montage för industri och bygg med tydliga underlag hela vägen.' },
+      { heading: 'Rörsvets',         paragraph: 'Certifierad rörsvets med kontrollerat utförande och dokumentation från start till klart.' },
+      { heading: 'Industrimontage',  paragraph: 'Montage på plats med fokus på säkerhet och planering för både små och stora uppdrag.' },
+      { heading: 'Legoarbeten',      paragraph: 'Resurser för planering och samordning för en smidigare leverans och genomförande.' },
+    ];
+
     origItems.forEach((item, i) => {
       const card = item.querySelector('.demo-card');
       if (!card || card.querySelector('.demo-card__info')) return;
+
+      const data = slideContent[i % slideContent.length];
 
       const info = document.createElement('div');
       info.className = 'demo-card__info';
 
       const heading = document.createElement('h3');
       heading.className = 'demo-card__info-heading';
-      const existingTitle = card.querySelector('.demo-card__title');
-      heading.textContent = existingTitle ? existingTitle.textContent.trim() : `Slide ${i + 1}`;
+      heading.textContent = data.heading;
 
       const para = document.createElement('p');
       para.className = 'demo-card__info-paragraph';
-      para.textContent = `Slide ${i + 1} Paragraph`;
+      para.textContent = data.paragraph;
 
       info.appendChild(heading);
       info.appendChild(para);
