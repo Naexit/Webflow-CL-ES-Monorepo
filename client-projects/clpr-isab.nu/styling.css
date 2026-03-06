@@ -647,7 +647,7 @@ a.nav-link:focus-visible .nav-link__label::after {
   bottom: 1em;
   right: 1em;
   left: 1em;
-  background: #d4d0cd;
+  background: #F5F5F5;
   border-radius: 0.5em;
   padding: 1em 1.25em;
 }
