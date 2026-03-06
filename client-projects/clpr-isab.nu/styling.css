@@ -650,10 +650,11 @@ a.nav-link:focus-visible .nav-link__label::after {
   background: #F5F5F5;
   border-radius: 0.5em;
   padding: 1em 1.25em;
+  font-family: 'Inter Tight', 'Inter', sans-serif;
 }
 
 .demo-card__info-heading {
-  font-size: 1em;
+  font-size: 1.25em;
   font-weight: 600;
   margin: 0 0 0.5em;
   color: #333;

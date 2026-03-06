@@ -1300,6 +1300,14 @@ function initBasicGSAPSlider() {
       return;
     }
 
+    /* ── Load Inter Tight font if not already present ── */
+    if (!document.querySelector('link[href*="Inter+Tight"]')) {
+      const fontLink = document.createElement('link');
+      fontLink.rel = 'stylesheet';
+      fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap';
+      document.head.appendChild(fontLink);
+    }
+
     /* ── Inject info box into each slide card (before cloning) ── */
     const slideContent = [
       { heading: 'Stålarbeten',      paragraph: 'Tillverkning och montage för industri och bygg med tydliga underlag hela vägen.' },
