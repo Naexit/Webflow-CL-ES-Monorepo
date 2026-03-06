@@ -1425,23 +1425,30 @@ function initBasicGSAPSlider() {
       return best;
     }
 
-    /* ── Warp to home range (invisible reposition) ── */
+    /* ── Warp to home range (invisible reposition) ──
+     *  Returns true if a warp happened. The warping class stays ON so
+     *  callers can run updateStatus() while transitions are suppressed.
+     *  Transitions are restored after the browser paints (double-rAF). */
     function warpHome() {
       let x = gsap.getProperty(track, 'x');
       let shifted = false;
       while (x > homeMax + slideW * 0.45) { x -= oneSetW; shifted = true; }
       while (x < homeMin - slideW * 0.45) { x += oneSetW; shifted = true; }
       if (shifted) {
-        // Suppress ALL CSS transitions (including ::after overlays)
         track.classList.add('gsap-slider--warping');
-
         gsap.set(track, { x: x });
         if (root._sliderDraggable) root._sliderDraggable.update();
-
-        // Force reflow then restore transitions
-        void track.offsetHeight;
-        track.classList.remove('gsap-slider--warping');
       }
+      return shifted;
+    }
+
+    /* Restore transitions after the browser has painted the warped state */
+    function endWarp() {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          track.classList.remove('gsap-slider--warping');
+        });
+      });
     }
 
     /* ── Update slide statuses ── */
@@ -1485,7 +1492,11 @@ function initBasicGSAPSlider() {
           x: target,
           ease: 'power2.out',
           onUpdate()   { updateStatus(gsap.getProperty(track, 'x')); },
-          onComplete() { warpHome(); updateStatus(gsap.getProperty(track, 'x')); }
+          onComplete() {
+            const warped = warpHome();
+            updateStatus(gsap.getProperty(track, 'x'));
+            if (warped) endWarp();
+          }
         });
       };
       btn.addEventListener('click', btn._sliderClickHandler);
@@ -1516,8 +1527,9 @@ function initBasicGSAPSlider() {
       },
       onThrowComplete() {
         setX(this.endX);
-        warpHome();
+        const warped = warpHome();
         updateStatus(gsap.getProperty(track, 'x'));
+        if (warped) endWarp();
         track.setAttribute('data-gsap-slider-list-status', 'grab');
       },
       onRelease() {
