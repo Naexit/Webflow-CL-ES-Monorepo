@@ -714,15 +714,13 @@ a.nav-link:focus-visible .nav-link__label::after {
   opacity: 0.85;
 }
 
-/* Keep info box above the overlay */
+/* Keep info box below the overlay so it gets darkened too */
 .demo-card__info {
-  z-index: 2;
+  z-index: 0;
 }
 
 .demo-card__tag {
   transition: all 0.3s ease;
-  z-index: 2;
-  position: relative;
 }
 
 [data-gsap-slider-item-status="not-active"] .demo-card__tag {
