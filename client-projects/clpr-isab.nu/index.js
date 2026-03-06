@@ -1378,14 +1378,15 @@ function initBasicGSAPSlider() {
     });
 
     /* ── Geometry ──
-     *  peekPx: a small right-shift so a sliver of the previous slide
-     *          peeks on the left edge, giving the "items on both sides" look. */
-    const peekPx = Math.round(slideW * 0.15);
+     *  centerOffset: positions the active slide in the centre of the
+     *  viewport so items are visible on both sides from the start. */
+    const cardW        = itemRect.width;                          // visual card width (no gap)
+    const centerOffset = Math.round((viewW - cardW) / 2);        // px to shift so card is centred
 
     // Home-range snap points (one per original slide)
     const snapBase = [];
     for (let j = 0; j < N; j++) {
-      snapBase.push(-(origStartIdx + j) * slideW + peekPx);
+      snapBase.push(-(origStartIdx + j) * slideW + centerOffset);
     }
     const homeMax = snapBase[0];          // most-positive home snap
     const homeMin = snapBase[N - 1];      // most-negative home snap
@@ -1431,8 +1432,21 @@ function initBasicGSAPSlider() {
       while (x > homeMax + slideW * 0.45) { x -= oneSetW; shifted = true; }
       while (x < homeMin - slideW * 0.45) { x += oneSetW; shifted = true; }
       if (shifted) {
+        // Suppress CSS transitions so the instant jump never flickers
+        allItems.forEach(el => el.style.transition = 'none');
+        const cards = track.querySelectorAll('.demo-card');
+        cards.forEach(c => c.style.transition = 'none');
+        const tags = track.querySelectorAll('.demo-card__tag');
+        tags.forEach(t => t.style.transition = 'none');
+
         gsap.set(track, { x: x });
         if (root._sliderDraggable) root._sliderDraggable.update();
+
+        // Force reflow then restore transitions
+        void track.offsetHeight;
+        allItems.forEach(el => el.style.transition = '');
+        cards.forEach(c => c.style.transition = '');
+        tags.forEach(t => t.style.transition = '');
       }
     }
 
