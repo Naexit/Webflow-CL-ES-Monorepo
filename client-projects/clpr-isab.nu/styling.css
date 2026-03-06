@@ -637,6 +637,35 @@ a.nav-link:focus-visible .nav-link__label::after {
   margin-right: 0;
 }
 
+/* Info box inside each slide card */
+.demo-card {
+  position: relative;
+}
+
+.demo-card__info {
+  position: absolute;
+  bottom: 1em;
+  right: 1em;
+  left: 1em;
+  background: #d4d0cd;
+  border-radius: 0.5em;
+  padding: 1em 1.25em;
+}
+
+.demo-card__info-heading {
+  font-size: 1em;
+  font-weight: 600;
+  margin: 0 0 0.5em;
+  color: #333;
+}
+
+.demo-card__info-paragraph {
+  font-size: 0.875em;
+  color: #555;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Controls */
 [data-gsap-slider-status="not-active"] [data-gsap-slider-controls] {
   display: none;

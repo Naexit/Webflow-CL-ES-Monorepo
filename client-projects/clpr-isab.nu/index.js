@@ -1300,6 +1300,28 @@ function initBasicGSAPSlider() {
       return;
     }
 
+    /* ── Inject info box into each slide card (before cloning) ── */
+    origItems.forEach((item, i) => {
+      const card = item.querySelector('.demo-card');
+      if (!card || card.querySelector('.demo-card__info')) return;
+
+      const info = document.createElement('div');
+      info.className = 'demo-card__info';
+
+      const heading = document.createElement('h3');
+      heading.className = 'demo-card__info-heading';
+      const existingTitle = card.querySelector('.demo-card__title');
+      heading.textContent = existingTitle ? existingTitle.textContent.trim() : `Slide ${i + 1}`;
+
+      const para = document.createElement('p');
+      para.className = 'demo-card__info-paragraph';
+      para.textContent = `Slide ${i + 1} Paragraph`;
+
+      info.appendChild(heading);
+      info.appendChild(para);
+      card.appendChild(info);
+    });
+
     /* ── Clone slides for infinite loop ──
      *  Layout: [SETS copies before][originals][SETS copies after]
      *  After each throw / button-click we silently warp the track back
