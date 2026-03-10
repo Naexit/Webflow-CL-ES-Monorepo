@@ -613,45 +613,8 @@ a.nav-link:focus-visible .nav-link__label::after {
 
 [data-gsap-slider-init] {
   --slider-status: on; /* Turn slider on/off */
-  --slider-spv: 5; /* Slides per view – bump up for wider carousel */
+  --slider-spv: 3; /* Slides per view */ 
   --slider-gap: 1.5em; /* Slides Gap */
-}
-
-/* automatically number each slide and add an icon; markup can be blank in Webflow */
-[data-gsap-slider-list] {
-  counter-reset: gsap-slide;
-}
-[data-gsap-slider-item] {
-  counter-increment: gsap-slide;
-  position: relative; /* for pseudo elements */
-}
-[data-gsap-slider-item]::before {
-  content: counter(gsap-slide);
-  position: absolute;
-  top: 0.75rem;
-  left: 0.75rem;
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #ffffff;
-}
-[data-gsap-slider-item]::after {
-  content: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23fff'/%3E%3C/svg%3E");
-  /* replace the data‑URI with your real icon or leave as placeholder */
-  position: absolute;
-  top: 0.75rem;
-  left: 2.5rem;
-  width: 1rem;
-  height: 1rem;
-}
-
-/* slide title / description tweaks */
-.demo-card__title {
-  margin-top: 3.5rem; /* push title down under number/icon */
-}
-.demo-card__description {
-  margin-top: 0.5rem; /* give paragraph some breathing room */
-  font-size: 0.9rem;
-  color: #ccc;
 }
 
 @media screen and (max-width: 991px) {
@@ -674,6 +637,36 @@ a.nav-link:focus-visible .nav-link__label::after {
   margin-right: 0;
 }
 
+/* Info box inside each slide card */
+.demo-card {
+  position: relative;
+}
+
+.demo-card__info {
+  position: absolute;
+  bottom: 1em;
+  right: 1em;
+  left: 1em;
+  background: #F5F5F5;
+  border-radius: 0.5em;
+  padding: 1em 1.25em;
+  font-family: 'Inter Tight', 'Inter', sans-serif;
+}
+
+.demo-card__info-heading {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 0 0 0.5em;
+  color: #333;
+}
+
+.demo-card__info-paragraph {
+  font-size: 0.875em;
+  color: #555;
+  margin: 0;
+  line-height: 1.4;
+}
+
 /* Controls */
 [data-gsap-slider-status="not-active"] [data-gsap-slider-controls] {
   display: none;
@@ -692,10 +685,39 @@ a.nav-link:focus-visible .nav-link__label::after {
 
 .demo-card {
   transition: all 0.3s ease;
+  overflow: hidden;
 }
 
-[data-gsap-slider-item-status="not-active"] .demo-card {
-  background-color: #131313;
+/* Dark overlay via pseudo-element — works over absolute images */
+.demo-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Active slide: no overlay */
+[data-gsap-slider-item-status="active"] .demo-card::after {
+  opacity: 0;
+}
+
+/* In-view (beside center): moderately dark but still readable */
+[data-gsap-slider-item-status="inview"] .demo-card::after {
+  opacity: 0.55;
+}
+
+/* Off-screen / farthest away: very dark, barely visible */
+[data-gsap-slider-item-status="not-active"] .demo-card::after {
+  opacity: 0.85;
+}
+
+/* Keep info box below the overlay so it gets darkened too */
+.demo-card__info {
+  z-index: 0;
 }
 
 .demo-card__tag {
@@ -706,17 +728,9 @@ a.nav-link:focus-visible .nav-link__label::after {
   opacity: 0;
 }
 
-/* CSS Keyframe Animation */
-@keyframes translateX { 
-  to {
-    transform: translateX(-100%);
-  }
-}
-
-[data-css-marquee-list] {
-  display: flex;
-  white-space: nowrap;
-  animation: translateX 30s linear;
-  animation-iteration-count: infinite;
-  animation-play-state: paused;
+/* Kill ALL transitions during warp (prevents flicker on clones + ::after overlays) */
+.gsap-slider--warping *,
+.gsap-slider--warping *::after,
+.gsap-slider--warping *::before {
+  transition: none !important;
 }
