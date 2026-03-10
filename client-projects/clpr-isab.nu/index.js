@@ -1216,362 +1216,50 @@ document.addEventListener('DOMContentLoaded', () => {
   initNewsFeed();
 });
 
-gsap.registerPlugin(Draggable, InertiaPlugin);
+function initStickyStepsBasic() {
+  const container = document.querySelector("[data-sticky-steps-init]");
+  if (!container) return;
 
-function initBasicGSAPSlider() {
-  document.querySelectorAll('[data-gsap-slider-init]').forEach(root => {
-    /* ── Cleanup previous instance ── */
-    if (root._sliderDraggable) { root._sliderDraggable.kill(); root._sliderDraggable = null; }
-    root.querySelectorAll('[data-gsap-slider-clone]').forEach(c => c.remove());
+  const items = [...container.querySelectorAll("[data-sticky-steps-item]")];
+  if (!items.length) return;
 
-    const collection = root.querySelector('[data-gsap-slider-collection]');
-    const track      = root.querySelector('[data-gsap-slider-list]');
-    const origItems  = Array.from(root.querySelectorAll('[data-gsap-slider-item]:not([data-gsap-slider-clone])'));
-    const controls   = Array.from(root.querySelectorAll('[data-gsap-slider-control]'));
-    const N          = origItems.length;
+  function updateSteps() {
+    const viewportCenter = window.innerHeight / 2;
 
-    if (!N) return;
+    let closestIndex = 0;
+    let closestDistance = Infinity;
 
-    /* ── Aria ── */
-    root.setAttribute('role', 'region');
-    root.setAttribute('aria-roledescription', 'carousel');
-    root.setAttribute('aria-label', 'Slider');
-    collection.setAttribute('role', 'group');
-    collection.setAttribute('aria-roledescription', 'Slides List');
-    collection.setAttribute('aria-label', 'Slides');
-    origItems.forEach((slide, i) => {
-      slide.setAttribute('role', 'group');
-      slide.setAttribute('aria-roledescription', 'Slide');
-      slide.setAttribute('aria-label', `Slide ${i + 1} of ${N}`);
-      slide.setAttribute('aria-hidden', 'true');
-      slide.setAttribute('aria-selected', 'false');
-      slide.setAttribute('tabindex', '-1');
-    });
-    controls.forEach(btn => {
-      const dir = btn.getAttribute('data-gsap-slider-control');
-      btn.setAttribute('role', 'button');
-      btn.setAttribute('aria-label', dir === 'prev' ? 'Previous Slide' : 'Next Slide');
-      btn.disabled = true;
-      btn.setAttribute('aria-disabled', 'true');
+    items.forEach((item, index) => {
+      const anchor = item.querySelector("[data-sticky-steps-anchor]");
+      if (!anchor) return;
+
+      const rect = anchor.getBoundingClientRect();
+      const anchorCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(viewportCenter - anchorCenter);
+
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
     });
 
-    /* ── Read CSS custom properties ── */
-    const styles    = getComputedStyle(root);
-    const statusVar = styles.getPropertyValue('--slider-status').trim();
-    let   spvVar    = parseFloat(styles.getPropertyValue('--slider-spv'));
-    const itemRect  = origItems[0].getBoundingClientRect();
-    const gapPx     = parseFloat(getComputedStyle(origItems[0]).marginRight) || 0;
-    const slideW    = itemRect.width + gapPx;
+    items.forEach((item, index) => {
+      let status = "active";
 
-    if (isNaN(spvVar)) spvVar = collection.clientWidth / slideW;
-    const spv           = Math.max(1, Math.min(spvVar, N));
-    const sliderEnabled = statusVar === 'on' && spv < N;
+      if (index < closestIndex) status = "before";
+      if (index > closestIndex) status = "after";
 
-    root.setAttribute('data-gsap-slider-status', sliderEnabled ? 'active' : 'not-active');
-
-    if (!sliderEnabled) {
-      /* ── Teardown when disabled ── */
-      track.removeAttribute('style');
-      track.onmouseenter = null;
-      track.onmouseleave = null;
-      track.removeAttribute('data-gsap-slider-list-status');
-      root.removeAttribute('role');
-      root.removeAttribute('aria-roledescription');
-      root.removeAttribute('aria-label');
-      collection.removeAttribute('role');
-      collection.removeAttribute('aria-roledescription');
-      collection.removeAttribute('aria-label');
-      origItems.forEach(slide => {
-        slide.removeAttribute('role');
-        slide.removeAttribute('aria-roledescription');
-        slide.removeAttribute('aria-label');
-        slide.removeAttribute('aria-hidden');
-        slide.removeAttribute('aria-selected');
-        slide.removeAttribute('tabindex');
-        slide.removeAttribute('data-gsap-slider-item-status');
-      });
-      controls.forEach(btn => {
-        btn.disabled = false;
-        btn.removeAttribute('role');
-        btn.removeAttribute('aria-label');
-        btn.removeAttribute('aria-disabled');
-        btn.removeAttribute('data-gsap-slider-control-status');
-      });
-      return;
-    }
-
-    /* ── Load Inter Tight font if not already present ── */
-    if (!document.querySelector('link[href*="Inter+Tight"]')) {
-      const fontLink = document.createElement('link');
-      fontLink.rel = 'stylesheet';
-      fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap';
-      document.head.appendChild(fontLink);
-    }
-
-    /* ── Inject info box into each slide card (before cloning) ── */
-    const slideContent = [
-      { heading: 'Stålarbeten',      paragraph: 'Tillverkning och montage för industri och bygg med tydliga underlag hela vägen.' },
-      { heading: 'Rörsvets',         paragraph: 'Certifierad rörsvets med kontrollerat utförande och dokumentation från start till klart.' },
-      { heading: 'Industrimontage',  paragraph: 'Montage på plats med fokus på säkerhet och planering för både små och stora uppdrag.' },
-      { heading: 'Legoarbeten',      paragraph: 'Resurser för planering och samordning för en smidigare leverans och genomförande.' },
-    ];
-
-    origItems.forEach((item, i) => {
-      const card = item.querySelector('.demo-card');
-      if (!card || card.querySelector('.demo-card__info')) return;
-
-      const data = slideContent[i % slideContent.length];
-
-      const info = document.createElement('div');
-      info.className = 'demo-card__info';
-
-      const heading = document.createElement('h3');
-      heading.className = 'demo-card__info-heading';
-      heading.textContent = data.heading;
-
-      const para = document.createElement('p');
-      para.className = 'demo-card__info-paragraph';
-      para.textContent = data.paragraph;
-
-      info.appendChild(heading);
-      info.appendChild(para);
-      card.appendChild(info);
+      item.setAttribute("data-sticky-steps-item-status", status);
     });
+  }
 
-    /* ── Clone slides for infinite loop ──
-     *  Layout: [SETS copies before][originals][SETS copies after]
-     *  After each throw / button-click we silently warp the track back
-     *  to the "home" (original) range so the loop feels infinite. */
-    const viewW   = collection.clientWidth;
-    const oneSetW = N * slideW;                               // width of one full set
-    const SETS    = Math.max(2, Math.ceil(viewW / oneSetW) + 1); // clone sets per side
+  window.addEventListener("scroll", updateSteps);
+  window.addEventListener("resize", updateSteps);
 
-    for (let s = 0; s < SETS; s++) {
-      for (let i = N - 1; i >= 0; i--) {
-        const cl = origItems[i].cloneNode(true);
-        cl.setAttribute('data-gsap-slider-clone', '');
-        track.insertBefore(cl, track.firstChild);
-      }
-    }
-    for (let s = 0; s < SETS; s++) {
-      for (let i = 0; i < N; i++) {
-        const cl = origItems[i].cloneNode(true);
-        cl.setAttribute('data-gsap-slider-clone', '');
-        track.appendChild(cl);
-      }
-    }
-
-    const allItems     = Array.from(track.querySelectorAll('[data-gsap-slider-item]'));
-    const origStartIdx = SETS * N;   // index of first original in allItems
-
-    // Aria for cloned items
-    allItems.forEach((s, i) => {
-      s.setAttribute('role', 'group');
-      s.setAttribute('aria-roledescription', 'Slide');
-      s.setAttribute('aria-label', `Slide ${(i % N) + 1} of ${N}`);
-      s.setAttribute('aria-hidden', 'true');
-      s.setAttribute('aria-selected', 'false');
-      s.setAttribute('tabindex', '-1');
-    });
-
-    /* ── Track hover cursors ── */
-    track.onmouseenter = () => track.setAttribute('data-gsap-slider-list-status', 'grab');
-    track.onmouseleave = () => track.removeAttribute('data-gsap-slider-list-status');
-
-    /* ── Controls always active in loop mode ── */
-    controls.forEach(btn => {
-      btn.disabled = false;
-      btn.setAttribute('aria-disabled', 'false');
-      btn.setAttribute('data-gsap-slider-control-status', 'active');
-    });
-
-    /* ── Geometry ──
-     *  centerOffset: positions the active slide in the centre of the
-     *  viewport so items are visible on both sides from the start. */
-    const cardW        = itemRect.width;                          // visual card width (no gap)
-    const centerOffset = Math.round((viewW - cardW) / 2);        // px to shift so card is centred
-
-    // Home-range snap points (one per original slide)
-    const snapBase = [];
-    for (let j = 0; j < N; j++) {
-      snapBase.push(-(origStartIdx + j) * slideW + centerOffset);
-    }
-    const homeMax = snapBase[0];          // most-positive home snap
-    const homeMin = snapBase[N - 1];      // most-negative home snap
-
-    // Deliberately wide bounds so the user never hits the edge
-    const boundsMin = -(allItems.length * slideW);
-    const boundsMax = slideW;
-
-    let   activeOrigIdx = 0;
-    const setX          = gsap.quickSetter(track, 'x', 'px');
-    let   colRect       = collection.getBoundingClientRect();
-
-    /* ── Snap helper: normalize any x to the home range, find closest ── */
-    function closestSnap(x) {
-      let n = x, k = 0;
-      while (n > homeMax + slideW * 0.45) { n -= oneSetW; k++; }
-      while (n < homeMin - slideW * 0.45) { n += oneSetW; k--; }
-      let best = snapBase[0], bestD = Math.abs(snapBase[0] - n);
-      for (let j = 1; j < N; j++) {
-        const d = Math.abs(snapBase[j] - n);
-        if (d < bestD) { best = snapBase[j]; bestD = d; }
-      }
-      return best + k * oneSetW;
-    }
-
-    /* ── Which original index a position maps to ── */
-    function origIndexAt(x) {
-      let n = x;
-      while (n > homeMax + slideW * 0.45) n -= oneSetW;
-      while (n < homeMin - slideW * 0.45) n += oneSetW;
-      let best = 0, bestD = Math.abs(snapBase[0] - n);
-      for (let j = 1; j < N; j++) {
-        const d = Math.abs(snapBase[j] - n);
-        if (d < bestD) { best = j; bestD = d; }
-      }
-      return best;
-    }
-
-    /* ── Warp to home range (invisible reposition) ──
-     *  Returns true if a warp happened. The warping class stays ON so
-     *  callers can run updateStatus() while transitions are suppressed.
-     *  Transitions are restored after the browser paints (double-rAF). */
-    function warpHome() {
-      let x = gsap.getProperty(track, 'x');
-      let shifted = false;
-      while (x > homeMax + slideW * 0.45) { x -= oneSetW; shifted = true; }
-      while (x < homeMin - slideW * 0.45) { x += oneSetW; shifted = true; }
-      if (shifted) {
-        track.classList.add('gsap-slider--warping');
-        gsap.set(track, { x: x });
-        if (root._sliderDraggable) root._sliderDraggable.update();
-      }
-      return shifted;
-    }
-
-    /* Restore transitions after the browser has painted the warped state */
-    function endWarp() {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          track.classList.remove('gsap-slider--warping');
-        });
-      });
-    }
-
-    /* ── Update slide statuses ── */
-    function updateStatus(x) {
-      colRect       = collection.getBoundingClientRect();
-      activeOrigIdx = origIndexAt(x);
-
-      let activeMarked = false;
-      allItems.forEach((slide, i) => {
-        const r      = slide.getBoundingClientRect();
-        const center = (r.left - colRect.left) + r.width / 2;
-        const inView = center > -10 && center < colRect.width + 10;
-        const oIdx   = i % N;
-
-        let status;
-        if (inView && !activeMarked && oIdx === activeOrigIdx) {
-          status = 'active';
-          activeMarked = true;
-        } else if (inView) {
-          status = 'inview';
-        } else {
-          status = 'not-active';
-        }
-
-        slide.setAttribute('data-gsap-slider-item-status', status);
-        slide.setAttribute('aria-selected', status === 'active' ? 'true' : 'false');
-        slide.setAttribute('aria-hidden',  inView ? 'false' : 'true');
-        slide.setAttribute('tabindex',     status === 'active' ? '0' : '-1');
-      });
-    }
-
-    /* ── Prev / Next buttons (remove old handler to avoid stacking on resize) ── */
-    controls.forEach(btn => {
-      if (btn._sliderClickHandler) btn.removeEventListener('click', btn._sliderClickHandler);
-      const dir = btn.getAttribute('data-gsap-slider-control');
-      btn._sliderClickHandler = () => {
-        const curX   = gsap.getProperty(track, 'x');
-        const target = dir === 'next' ? curX - slideW : curX + slideW;
-        gsap.to(track, {
-          duration: 0.4,
-          x: target,
-          ease: 'power2.out',
-          onUpdate()   { updateStatus(gsap.getProperty(track, 'x')); },
-          onComplete() {
-            const warped = warpHome();
-            updateStatus(gsap.getProperty(track, 'x'));
-            if (warped) endWarp();
-          }
-        });
-      };
-      btn.addEventListener('click', btn._sliderClickHandler);
-    });
-
-    /* ── Draggable ── */
-    root._sliderDraggable = Draggable.create(track, {
-      type: 'x',
-      inertia: true,
-      bounds: { minX: boundsMin, maxX: boundsMax },
-      throwResistance: 2000,
-      dragResistance: 0.05,
-      maxDuration: 0.6,
-      minDuration: 0.2,
-      edgeResistance: 0.85,
-      snap: { x: function(val) { return closestSnap(val); } },
-      onPress() {
-        track.setAttribute('data-gsap-slider-list-status', 'grabbing');
-        colRect = collection.getBoundingClientRect();
-      },
-      onDrag() {
-        setX(this.x);
-        updateStatus(this.x);
-      },
-      onThrowUpdate() {
-        setX(this.x);
-        updateStatus(this.x);
-      },
-      onThrowComplete() {
-        setX(this.endX);
-        const warped = warpHome();
-        updateStatus(gsap.getProperty(track, 'x'));
-        if (warped) endWarp();
-        track.setAttribute('data-gsap-slider-list-status', 'grab');
-      },
-      onRelease() {
-        setX(this.x);
-        updateStatus(this.x);
-        track.setAttribute('data-gsap-slider-list-status', 'grab');
-      }
-    })[0];
-
-    /* ── Initial position ──
-     *  Start at the first original slide; the peek offset + clones to the
-     *  left ensure content is visible on both sides of the viewport. */
-    setX(snapBase[0]);
-    updateStatus(snapBase[0]);
-  });
+  requestAnimationFrame(updateSteps);
 }
 
-// Debouncer: For resizing the window
-function debounceOnWidthChange(fn, ms) {
-  let last = innerWidth, timer;
-  return function(...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => {
-      if (innerWidth !== last) {
-        last = innerWidth;
-        fn.apply(this, args);
-      }
-    }, ms);
-  };
-}
-
-window.addEventListener('resize', debounceOnWidthChange(initBasicGSAPSlider, 200));
-
-// Initialize Basic GSAP Slider
-document.addEventListener('DOMContentLoaded', function() {
-  initBasicGSAPSlider();
+// Initialize Sticky Steps (Basic)
+document.addEventListener('DOMContentLoaded', function () {
+  initStickyStepsBasic();
 });
