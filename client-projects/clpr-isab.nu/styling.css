@@ -418,16 +418,24 @@ a.nav-link:focus-visible .nav-link__label::after {
 }
 
 /* Make the card use full available height so the iframe can stretch */
+.modal__card:has(.modal__content--pdf) {
+  height: 90vh;
+  height: 90dvh;
+  max-height: none;
+}
+
 .modal__card:has(.modal__content--pdf) .modal__scroll {
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .modal__card:has(.modal__content--pdf) .modal__content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 [data-cascading-viewport] {
