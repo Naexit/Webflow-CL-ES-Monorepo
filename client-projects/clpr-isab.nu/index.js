@@ -1107,16 +1107,46 @@ function initNewsFeed() {
   // Fetch real articles from the /news collection page
   fetchNewsFeedArticles(list);
 
-  // Toggle open / closed
+  // ———— Helpers ————
+  let closeTimer = null;
+  const CLOSE_DELAY = 450; // ms – enough to move the cursor to the panel
+
+  function openFeed() {
+    clearTimeout(closeTimer);
+    feed.dataset.newsFeed = 'open';
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+
+  function scheduleFeedClose() {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(() => {
+      feed.dataset.newsFeed = 'closed';
+      trigger.setAttribute('aria-expanded', 'false');
+    }, CLOSE_DELAY);
+  }
+
+  // ———— Hover-to-expand (desktop) ————
+  trigger.addEventListener('mouseenter', openFeed);
+  trigger.addEventListener('mouseleave', scheduleFeedClose);
+  panel.addEventListener('mouseenter', () => clearTimeout(closeTimer));
+  panel.addEventListener('mouseleave', scheduleFeedClose);
+
+  // ———— Touch / click fallback (mobile) ————
   trigger.addEventListener('click', () => {
     const isOpen = feed.dataset.newsFeed === 'open';
-    feed.dataset.newsFeed = isOpen ? 'closed' : 'open';
-    trigger.setAttribute('aria-expanded', String(!isOpen));
+    if (isOpen) {
+      clearTimeout(closeTimer);
+      feed.dataset.newsFeed = 'closed';
+      trigger.setAttribute('aria-expanded', 'false');
+    } else {
+      openFeed();
+    }
   });
 
   // Close on Escape
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && feed.dataset.newsFeed === 'open') {
+      clearTimeout(closeTimer);
       feed.dataset.newsFeed = 'closed';
       trigger.setAttribute('aria-expanded', 'false');
       trigger.focus();
@@ -1126,6 +1156,7 @@ function initNewsFeed() {
   // Close when clicking outside
   document.addEventListener('click', (e) => {
     if (feed.dataset.newsFeed === 'open' && !feed.contains(e.target)) {
+      clearTimeout(closeTimer);
       feed.dataset.newsFeed = 'closed';
       trigger.setAttribute('aria-expanded', 'false');
     }

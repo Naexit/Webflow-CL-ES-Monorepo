@@ -491,14 +491,25 @@ a.nav-link:focus-visible .nav-link__label::after {
   background: #8a1b2e;
 }
 
+/* Invisible hover zone — makes the trigger easier to reach */
+.news-feed__trigger::before {
+  content: '';
+  position: absolute;
+  top: -1.5em;
+  bottom: -1.5em;
+  right: 0;
+  left: -2em;
+  pointer-events: auto;
+}
+
 .news-feed__trigger-arrow {
   display: block;
   width: 0.55em;
   height: 0.55em;
   border-left: 2px solid #fff;
   border-bottom: 2px solid #fff;
-  transform: rotate(135deg);
-  margin-right: 0.15em;
+  transform: rotate(45deg);
+  margin-left: 0.15em;
   transition: transform var(--duration-normal) var(--cubic-default),
               margin var(--duration-normal) var(--cubic-default);
 }
@@ -509,9 +520,9 @@ a.nav-link:focus-visible .nav-link__label::after {
 }
 
 [data-news-feed="open"] .news-feed__trigger-arrow {
-  transform: rotate(-45deg);
-  margin-right: 0;
-  margin-left: 0.15em;
+  transform: rotate(-135deg);
+  margin-left: 0;
+  margin-right: 0.15em;
 }
 
 /* Sliding panel — offscreen by default */
