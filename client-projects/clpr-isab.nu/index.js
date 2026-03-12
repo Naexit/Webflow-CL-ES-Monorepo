@@ -1164,6 +1164,8 @@ function initNewsFeed() {
 }
 
 async function fetchNewsFeedArticles(listEl) {
+  const MAX_ARTICLES = 5;
+
   try {
     const res = await fetch('/news');
     if (!res.ok) throw new Error(res.status);
@@ -1186,13 +1188,16 @@ async function fetchNewsFeedArticles(listEl) {
           ? headingEl.textContent.trim()
           : link.textContent.trim();
 
+        // Try to grab an image from the collection list item itself
+        const imgEl = item.querySelector('img');
+        const image = imgEl ? (imgEl.getAttribute('src') || '') : '';
+
         // Extract date — look for a time element or text that looks like a date
         const timeEl = item.querySelector('time');
         let date = '';
         if (timeEl) {
           date = timeEl.textContent.trim();
         } else {
-          // Walk text nodes and look for a date-like string
           const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
           while (walker.nextNode()) {
             const txt = walker.currentNode.textContent.trim();
@@ -1203,7 +1208,7 @@ async function fetchNewsFeedArticles(listEl) {
           }
         }
 
-        articles.push({ title, url, date });
+        articles.push({ title, url, date, image });
       });
     } else {
       // Fallback: no .w-dyn-item — grab all unique /article/ links
@@ -1216,25 +1221,60 @@ async function fetchNewsFeedArticles(listEl) {
           title: link.textContent.trim(),
           url,
           date: '',
+          image: '',
         });
       });
     }
 
+    // Limit to latest 5
+    const latest = articles.slice(0, MAX_ARTICLES);
+
+    // For articles missing an image, fetch the article page and grab the hero image
+    await Promise.all(
+      latest.map(async (a) => {
+        if (a.image) return;
+        try {
+          const articleRes = await fetch(a.url);
+          if (!articleRes.ok) return;
+          const articleHtml = await articleRes.text();
+          const articleDoc = new DOMParser().parseFromString(articleHtml, 'text/html');
+          // Try og:image first, then the first large img on the page
+          const ogImg = articleDoc.querySelector('meta[property="og:image"]');
+          if (ogImg && ogImg.getAttribute('content')) {
+            a.image = ogImg.getAttribute('content');
+          } else {
+            const heroImg = articleDoc.querySelector('.hero img, .subpage-hero img, [class*="hero"] img, article img, .w-richtext img');
+            if (heroImg) a.image = heroImg.getAttribute('src') || '';
+          }
+        } catch (_) { /* skip image for this article */ }
+      })
+    );
+
     // Render
     listEl.innerHTML = '';
 
-    if (!articles.length) {
+    if (!latest.length) {
       listEl.innerHTML = '<li class="news-feed__item" style="color:#999;">Inga nyheter att visa.</li>';
       return;
     }
 
-    articles.forEach((a) => {
+    latest.forEach((a) => {
       const li = document.createElement('li');
       li.className = 'news-feed__item';
+
+      const imgMarkup = a.image
+        ? `<div class="news-feed__item-img-wrap"><img class="news-feed__item-img" src="${a.image}" alt="" loading="lazy"></div>`
+        : '';
+
       li.innerHTML =
-        (a.date ? `<span class="news-feed__item-date">${a.date}</span>` : '') +
-        `<h3 class="news-feed__item-heading">${a.title}</h3>` +
-        `<a href="${a.url}" class="news-feed__item-link">Läs mer →</a>`;
+        `<a href="${a.url}" class="news-feed__item-link">`
+        + imgMarkup
+        + `<div class="news-feed__item-body">`
+        + (a.date ? `<span class="news-feed__item-date">${a.date}</span>` : '')
+        + `<h3 class="news-feed__item-heading">${a.title}</h3>`
+        + `</div>`
+        + `</a>`;
+
       listEl.appendChild(li);
     });
   } catch (err) {

@@ -567,52 +567,76 @@ a.nav-link:focus-visible .nav-link__label::after {
   padding: 0;
   margin: 0;
   list-style: none;
+  display: flex;
+  flex-direction: column;
 }
 
 .news-feed__item {
-  padding: 1.25em;
+  flex: 1 1 0%;
+  min-height: 0;
   border-bottom: 1px solid #f0eeec;
   transition: background-color var(--duration-fast) var(--cubic-default);
 }
 
-.news-feed__item:hover {
+.news-feed__item:last-child {
+  border-bottom: none;
+}
+
+.news-feed__item-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  transition: background-color var(--duration-fast) var(--cubic-default);
+}
+
+.news-feed__item-link:hover {
   background: #faf9f8;
+}
+
+.news-feed__item-img-wrap {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  background: #f0eeec;
+}
+
+.news-feed__item-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.news-feed__item-link:hover .news-feed__item-img {
+  transform: scale(1.05);
+}
+
+.news-feed__item-body {
+  padding: 0.65em 1em;
+  flex-shrink: 0;
 }
 
 .news-feed__item-date {
   display: block;
-  font-size: 0.75em;
+  font-size: 0.7em;
   color: #888;
-  margin-bottom: 0.35em;
+  margin-bottom: 0.2em;
   white-space: nowrap;
 }
 
 .news-feed__item-heading {
-  font-size: 0.9375em;
+  font-size: 0.85em;
   font-weight: 600;
-  margin: 0 0 0.35em;
-  line-height: 1.3;
-}
-
-.news-feed__item-excerpt {
-  font-size: 0.8125em;
-  color: #555;
-  line-height: 1.45;
   margin: 0;
-}
-
-.news-feed__item-link {
-  display: inline-block;
-  margin-top: 0.5em;
-  font-size: 0.8125em;
-  font-weight: 600;
-  color: var(--color-dark);
-  text-decoration: none;
-  transition: opacity var(--duration-fast) var(--cubic-default);
-}
-
-.news-feed__item-link:hover {
-  opacity: 0.7;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 @media screen and (max-width: 767px) {
