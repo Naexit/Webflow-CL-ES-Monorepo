@@ -601,6 +601,8 @@ a.nav-link:focus-visible .nav-link__label::after {
   overflow: hidden;
   position: relative;
   background: #f0eeec;
+  border-radius: 1em;
+  margin: 0.5em 0.5em 0;
 }
 
 .news-feed__item-img {

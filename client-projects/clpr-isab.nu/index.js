@@ -1183,27 +1183,53 @@ async function fetchNewsFeedArticles(listEl) {
         const url = link.getAttribute('href');
 
         // Extract heading text (try h-tags first, then the link text itself)
+        // Clone and strip date/time nodes so the date doesn't leak into the title
         const headingEl = item.querySelector('h1, h2, h3, h4, h5, h6');
-        const title = headingEl
-          ? headingEl.textContent.trim()
-          : link.textContent.trim();
+        let title = '';
+        if (headingEl) {
+          const clone = headingEl.cloneNode(true);
+          clone.querySelectorAll('time, [class*="date"]').forEach(el => el.remove());
+          title = clone.textContent.trim();
+        }
+        if (!title) {
+          const linkClone = link.cloneNode(true);
+          linkClone.querySelectorAll('time, [class*="date"]').forEach(el => el.remove());
+          title = linkClone.textContent.trim();
+        }
 
         // Try to grab an image from the collection list item itself
         const imgEl = item.querySelector('img');
         const image = imgEl ? (imgEl.getAttribute('src') || '') : '';
 
-        // Extract date — look for a time element or text that looks like a date
+        // Extract date — look for a time element or a date-like text outside headings
         const timeEl = item.querySelector('time');
         let date = '';
         if (timeEl) {
           date = timeEl.textContent.trim();
         } else {
-          const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT);
-          while (walker.nextNode()) {
-            const txt = walker.currentNode.textContent.trim();
-            if (/\b\d{4}\b/.test(txt) && /[A-Za-z]/.test(txt) && txt.length < 40) {
-              date = txt;
-              break;
+          // Also check for an element with a date-related class
+          const dateEl = item.querySelector('[class*="date"]');
+          if (dateEl) {
+            date = dateEl.textContent.trim();
+          } else {
+            const walker = document.createTreeWalker(item, NodeFilter.SHOW_TEXT, {
+              acceptNode(node) {
+                // Skip text inside headings to avoid confusing title text with dates
+                if (node.parentElement && node.parentElement.closest('h1, h2, h3, h4, h5, h6')) {
+                  return NodeFilter.FILTER_REJECT;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+              }
+            });
+            while (walker.nextNode()) {
+              const txt = walker.currentNode.textContent.trim();
+              if (/\b\d{4}\b/.test(txt) && /[A-Za-z]/.test(txt) && txt.length < 40) {
+                date = txt;
+                break;
+              }
+            }
+          }
+        }
             }
           }
         }
