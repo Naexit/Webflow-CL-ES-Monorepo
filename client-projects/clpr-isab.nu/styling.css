@@ -650,6 +650,7 @@ a.nav-link:focus-visible .nav-link__label::after {
 
 .sticky-steps__visual {
   border-radius: 50%;
+  aspect-ratio: 1;
 }
 
 @media screen and (min-width: 992px) {
