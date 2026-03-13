@@ -1230,9 +1230,6 @@ async function fetchNewsFeedArticles(listEl) {
             }
           }
         }
-            }
-          }
-        }
 
         articles.push({ title, url, date, image });
       });
@@ -1255,28 +1252,7 @@ async function fetchNewsFeedArticles(listEl) {
     // Limit to latest 5
     const latest = articles.slice(0, MAX_ARTICLES);
 
-    // For articles missing an image, fetch the article page and grab the hero image
-    await Promise.all(
-      latest.map(async (a) => {
-        if (a.image) return;
-        try {
-          const articleRes = await fetch(a.url);
-          if (!articleRes.ok) return;
-          const articleHtml = await articleRes.text();
-          const articleDoc = new DOMParser().parseFromString(articleHtml, 'text/html');
-          // Try og:image first, then the first large img on the page
-          const ogImg = articleDoc.querySelector('meta[property="og:image"]');
-          if (ogImg && ogImg.getAttribute('content')) {
-            a.image = ogImg.getAttribute('content');
-          } else {
-            const heroImg = articleDoc.querySelector('.hero img, .subpage-hero img, [class*="hero"] img, article img, .w-richtext img');
-            if (heroImg) a.image = heroImg.getAttribute('src') || '';
-          }
-        } catch (_) { /* skip image for this article */ }
-      })
-    );
-
-    // Render
+    // Render immediately with whatever images are available from the collection list
     listEl.innerHTML = '';
 
     if (!latest.length) {
@@ -1284,13 +1260,13 @@ async function fetchNewsFeedArticles(listEl) {
       return;
     }
 
-    latest.forEach((a) => {
+    const liElements = latest.map((a) => {
       const li = document.createElement('li');
       li.className = 'news-feed__item';
 
       const imgMarkup = a.image
         ? `<div class="news-feed__item-img-wrap"><img class="news-feed__item-img" src="${a.image}" alt="" loading="lazy"></div>`
-        : '';
+        : '<div class="news-feed__item-img-wrap"></div>';
 
       li.innerHTML =
         `<a href="${a.url}" class="news-feed__item-link">`
@@ -1302,6 +1278,30 @@ async function fetchNewsFeedArticles(listEl) {
         + `</a>`;
 
       listEl.appendChild(li);
+      return li;
+    });
+
+    // Lazily backfill missing images without blocking the UI
+    latest.forEach((a, i) => {
+      if (a.image) return;
+      fetch(a.url)
+        .then(r => r.ok ? r.text() : Promise.reject())
+        .then(html => {
+          const articleDoc = new DOMParser().parseFromString(html, 'text/html');
+          const ogImg = articleDoc.querySelector('meta[property="og:image"]');
+          let src = '';
+          if (ogImg && ogImg.getAttribute('content')) {
+            src = ogImg.getAttribute('content');
+          } else {
+            const heroImg = articleDoc.querySelector('.hero img, .subpage-hero img, [class*="hero"] img, article img, .w-richtext img');
+            if (heroImg) src = heroImg.getAttribute('src') || '';
+          }
+          if (src) {
+            const wrap = liElements[i].querySelector('.news-feed__item-img-wrap');
+            if (wrap) wrap.innerHTML = `<img class="news-feed__item-img" src="${src}" alt="" loading="lazy">`;
+          }
+        })
+        .catch(() => {});
     });
   } catch (err) {
     listEl.innerHTML =
