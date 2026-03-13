@@ -648,6 +648,10 @@ a.nav-link:focus-visible .nav-link__label::after {
   }
 }
 
+.sticky-steps__visual {
+  border-radius: 50%;
+}
+
 @media screen and (min-width: 992px) {
   [data-sticky-steps-item-status] .sticky-steps__visual {
     transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
