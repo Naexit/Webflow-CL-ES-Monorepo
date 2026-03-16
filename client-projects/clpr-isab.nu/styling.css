@@ -630,6 +630,14 @@ a.nav-link:focus-visible .nav-link__label::after {
   white-space: nowrap;
 }
 
+.news-feed__item-status {
+  display: block;
+  font-size: 0.7em;
+  color: #888;
+  margin-bottom: 0.2em;
+  white-space: nowrap;
+}
+
 .news-feed__item-heading {
   font-size: 0.85em;
   font-weight: 600;
