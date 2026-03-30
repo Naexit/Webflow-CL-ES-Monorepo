@@ -816,7 +816,34 @@ function initModalBasic() {
 // Initialize Basic Modal
 document.addEventListener('DOMContentLoaded', () => {
   initModalBasic();
+  initModalPDFs();
 });
+
+function initModalPDFs() {
+  const pdfMap = {
+    'modal-a': 'https://cdn.prod.website-files.com/697a48a85eea599d8eb6fdc4/69b07f4b14c36e3fffea8338_iso-8859-1%27%27Certifikat_20ISO_203834.pdf',
+    'modal-b': 'https://cdn.prod.website-files.com/697a48a85eea599d8eb6fdc4/69b07f4bbe67b522da11e646_Certifikat.pdf',
+  };
+
+  Object.entries(pdfMap).forEach(([modalName, pdfUrl]) => {
+    const card = document.querySelector(`[data-modal-name="${modalName}"]`);
+    if (!card) return;
+
+    const content = card.querySelector('.modal__content');
+    if (!content) return;
+
+    // Replace text content with a full-size PDF iframe
+    content.innerHTML = '';
+    content.classList.add('modal__content--pdf');
+
+    const iframe = document.createElement('iframe');
+    iframe.src = pdfUrl;
+    iframe.className = 'modal__pdf-iframe';
+    iframe.setAttribute('loading', 'lazy');
+    iframe.setAttribute('title', modalName);
+    content.appendChild(iframe);
+  });
+}
 
 function initCascadingSlider() {
 
