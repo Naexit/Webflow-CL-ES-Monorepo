@@ -1,4 +1,4 @@
-function initNavigation() {
+﻿function initNavigation() {
   if (!initNavigation._hasResizeListener) {
     initNavigation._hasResizeListener = true;
     window.addEventListener('resize', debounce(initNavigation, 200));
@@ -1099,9 +1099,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initAccordionCSS();
 });
 
-// ———— Quick News Feed ————
+// ΓÇöΓÇöΓÇöΓÇö Quick News Feed ΓÇöΓÇöΓÇöΓÇö
 function initNewsFeed() {
-  // Build the DOM — wrapper uses display:contents so it has no layout impact
+  // Build the DOM ΓÇö wrapper uses display:contents so it has no layout impact
   const feed = document.createElement('div');
   feed.style.display = 'contents';
   feed.dataset.newsFeed = 'closed';
@@ -1110,7 +1110,7 @@ function initNewsFeed() {
   trigger.className = 'news-feed__trigger';
   trigger.setAttribute('aria-expanded', 'false');
   trigger.setAttribute('aria-controls', 'news-feed-panel');
-  trigger.setAttribute('aria-label', 'Öppna nyhetsflöde');
+  trigger.setAttribute('aria-label', '├ûppna nyhetsfl├╢de');
   trigger.innerHTML = '<span class="news-feed__trigger-arrow"></span>';
 
   const panel = document.createElement('div');
@@ -1123,7 +1123,7 @@ function initNewsFeed() {
 
   const list = document.createElement('ul');
   list.className = 'news-feed__list';
-  list.innerHTML = '<li class="news-feed__item" style="text-align:center;color:#999;">Laddar nyheter…</li>';
+  list.innerHTML = '<li class="news-feed__item" style="text-align:center;color:#999;">Laddar nyheterΓÇª</li>';
 
   panel.appendChild(header);
   panel.appendChild(list);
@@ -1134,9 +1134,9 @@ function initNewsFeed() {
   // Fetch real articles from the /news collection page
   fetchNewsFeedArticles(list);
 
-  // ———— Helpers ————
+  // ΓÇöΓÇöΓÇöΓÇö Helpers ΓÇöΓÇöΓÇöΓÇö
   let closeTimer = null;
-  const CLOSE_DELAY = 450; // ms – enough to move the cursor to the panel
+  const CLOSE_DELAY = 450; // ms ΓÇô enough to move the cursor to the panel
 
   function openFeed() {
     clearTimeout(closeTimer);
@@ -1152,13 +1152,13 @@ function initNewsFeed() {
     }, CLOSE_DELAY);
   }
 
-  // ———— Hover-to-expand (desktop) ————
+  // ΓÇöΓÇöΓÇöΓÇö Hover-to-expand (desktop) ΓÇöΓÇöΓÇöΓÇö
   trigger.addEventListener('mouseenter', openFeed);
   trigger.addEventListener('mouseleave', scheduleFeedClose);
   panel.addEventListener('mouseenter', () => clearTimeout(closeTimer));
   panel.addEventListener('mouseleave', scheduleFeedClose);
 
-  // ———— Touch / click fallback (mobile) ————
+  // ΓÇöΓÇöΓÇöΓÇö Touch / click fallback (mobile) ΓÇöΓÇöΓÇöΓÇö
   trigger.addEventListener('click', () => {
     const isOpen = feed.dataset.newsFeed === 'open';
     if (isOpen) {
@@ -1228,7 +1228,7 @@ async function fetchNewsFeedArticles(listEl) {
         const imgEl = item.querySelector('img');
         const image = imgEl ? (imgEl.getAttribute('src') || '') : '';
 
-        // Extract date — look for a time element or a date-like text outside headings
+        // Extract date ΓÇö look for a time element or a date-like text outside headings
         const timeEl = item.querySelector('time');
         let date = '';
         if (timeEl) {
@@ -1261,7 +1261,7 @@ async function fetchNewsFeedArticles(listEl) {
         articles.push({ title, url, date, image });
       });
     } else {
-      // Fallback: no .w-dyn-item — grab all unique /article/ links
+      // Fallback: no .w-dyn-item ΓÇö grab all unique /article/ links
       const seen = new Set();
       doc.querySelectorAll('a[href*="/article/"]').forEach((link) => {
         const url = link.getAttribute('href');
