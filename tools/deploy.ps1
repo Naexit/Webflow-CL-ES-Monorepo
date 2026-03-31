@@ -81,8 +81,13 @@ if ($remote -match "github\.com[:/](?<owner>[^/]+?)/(?<repo>[^/]+?)(\.git)?$") {
 
 # 2) Stage + commit + push (suppress output for clarity)
 $null = git add .
-$null = git commit -m $Message
-$null = git push
+$stagedChanges = git diff --cached --name-only
+if ($stagedChanges) {
+  $null = git commit -m $Message
+  $null = git push
+} else {
+  Write-Host "No changes to commit - using current commit for URLs"
+}
 
 # 3) Get current commit SHA for CDN URL generation
 # Using a commit SHA ensures jsDelivr doesn't apply immutable cache headers
