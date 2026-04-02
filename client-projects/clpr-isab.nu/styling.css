@@ -447,6 +447,13 @@ a.nav-link:focus-visible .nav-link__label::after {
   --radius: 0.75em;
 }
 
+[data-cascading-slide] img,
+[data-cascading-slide] picture,
+[data-cascading-slide] svg {
+  transform: none !important;
+  image-orientation: from-image;
+}
+
 [data-cascading-slide][data-status="active"] {
   cursor: default;
 }
